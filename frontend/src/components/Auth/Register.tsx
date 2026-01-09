@@ -28,7 +28,8 @@ const Register: React.FC = () => {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed');
+      const errorMessage = err.response?.data?.detail || err.message || 'Registration failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -38,8 +39,15 @@ const Register: React.FC = () => {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <div className="success">
-            Registration successful! Your account is pending verification. Redirecting to login...
+          <div className="auth-header">
+            <h1 className="auth-logo">Vanatvam</h1>
+          </div>
+          <div className="success-message" role="alert">
+            <span className="success-icon">✅</span>
+            <div className="success-content">
+              <div className="success-title">Registration Successful!</div>
+              <div className="success-text">Your account is pending verification. Redirecting to login...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -49,49 +57,109 @@ const Register: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Vanatvam</h1>
-        <h2>Register</h2>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            className="input"
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            className="input"
-          />
-          <input
-            type="tel"
-            placeholder="Phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            required
-            className="input"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-            className="input"
-          />
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
+        <div className="auth-header">
+          <h1 className="auth-logo">Vanatvam</h1>
+          <h2 className="auth-subtitle">Create Account</h2>
+          <p className="auth-description">Join the Vanatvam community</p>
+        </div>
+        
+        {error && (
+          <div className="error-message" role="alert">
+            <span className="error-icon">⚠️</span>
+            <span className="error-text">{error}</span>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="input-group">
+            <label htmlFor="name">Full Name</label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              id="phone"
+              type="tel"
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChange={(e) => {
+                setFormData({ ...formData, phone: e.target.value });
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Create a password"
+              value={formData.password}
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <button 
+            type="submit" 
+            className="auth-button" 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Creating Account...
+              </>
+            ) : (
+              'Create Account'
+            )}
           </button>
         </form>
-        <p>
-          Already have an account? <a href="/login">Login</a>
-        </p>
+        
+        <div className="auth-footer">
+          <p>
+            Already have an account? <a href="/login">Sign In</a>
+          </p>
+        </div>
       </div>
     </div>
   );
