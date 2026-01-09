@@ -1,0 +1,211 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  margin-bottom: 30px;
+  margin-top: 0;
+}
+
+.card h3 {
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  position: relative;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  color: white;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 12px;
+  margin-bottom: 5px;
+  z-index: 1000;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary {
+  background-color: rgba(0, 123, 255, 0.2);
+  color: #007bff;
+  border-color: rgba(0, 123, 255, 0.4);
+}
+
+.btn-primary:hover {
+  background-color: rgba(0, 123, 255, 0.3);
+  border-color: rgba(0, 123, 255, 0.6);
+  color: #0056b3;
+}
+
+.btn-success {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.4);
+}
+
+.btn-success:hover {
+  background-color: rgba(40, 167, 69, 0.3);
+  border-color: rgba(40, 167, 69, 0.6);
+  color: #218838;
+}
+
+.btn-danger {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border-color: rgba(220, 53, 69, 0.4);
+}
+
+.btn-danger:hover {
+  background-color: rgba(220, 53, 69, 0.3);
+  border-color: rgba(220, 53, 69, 0.6);
+  color: #c82333;
+}
+
+.btn-secondary {
+  background-color: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  border-color: rgba(108, 117, 125, 0.4);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(108, 117, 125, 0.3);
+  border-color: rgba(108, 117, 125, 0.6);
+  color: #5a6268;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.badge-confirmed {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-rejected {
+  background-color: #dc3545;
+  color: white;
+}
+
+.badge-cancelled {
+  background-color: #6c757d;
+  color: white;
+}
+
+.badge-pending-user {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.badge-active {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-suspended {
+  background-color: #dc3545;
+  color: white;
+}
+

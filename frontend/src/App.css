@@ -1,0 +1,24 @@
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+}
+
+.error {
+  color: #dc3545;
+  padding: 10px;
+  background-color: #f8d7da;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.success {
+  color: #155724;
+  padding: 10px;
+  background-color: #d4edda;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
