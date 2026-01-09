@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Dashboard from './Dashboard';
 import BookingCalendar from './BookingCalendar';
@@ -11,6 +11,8 @@ import './OwnerDashboard.css';
 const OwnerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (user?.status === 'pending') {
     return (
@@ -39,25 +41,74 @@ const OwnerDashboard: React.FC = () => {
     navigate('/login');
   };
 
+  const isActive = (path: string) => {
+    if (path === '/owner') {
+      return location.pathname === '/owner' || location.pathname === '/owner/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div className="dashboard">
-      <nav className="dashboard-nav">
-        <h1>Vanatvam</h1>
+      <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}>
+        <div className="vanatvam-header">
+          <h1 className="vanatvam-title">
+            <span className="vanatvam-text">Vanatvam</span>
+          </h1>
+        </div>
         <div className="nav-links">
-          <Link to="/owner">📊 Dashboard</Link>
-          <Link to="/owner/book">🏠 Book Cottage</Link>
-          <Link to="/owner/trips">🎒 My Trips</Link>
-          <Link to="/owner/quota">💰 Quota Status</Link>
-          <Link to="/owner/transactions">📜 Transaction History</Link>
+          <Link 
+            to="/owner" 
+            className={isActive('/owner') && location.pathname === '/owner' ? 'active' : ''}
+          >
+            <span className="nav-icon">📊</span>
+            <span className="nav-text">Dashboard</span>
+          </Link>
+          <Link 
+            to="/owner/book" 
+            className={isActive('/owner/book') ? 'active' : ''}
+          >
+            <span className="nav-icon">🏠</span>
+            <span className="nav-text">Book Cottage</span>
+          </Link>
+          <Link 
+            to="/owner/trips" 
+            className={isActive('/owner/trips') ? 'active' : ''}
+          >
+            <span className="nav-icon">🎒</span>
+            <span className="nav-text">My Trips</span>
+          </Link>
+          <Link 
+            to="/owner/quota" 
+            className={isActive('/owner/quota') ? 'active' : ''}
+          >
+            <span className="nav-icon">💰</span>
+            <span className="nav-text">Quota Status</span>
+          </Link>
+          <Link 
+            to="/owner/transactions" 
+            className={isActive('/owner/transactions') ? 'active' : ''}
+          >
+            <span className="nav-icon">📜</span>
+            <span className="nav-text">Transaction History</span>
+          </Link>
         </div>
         <div className="user-info">
-          <span>{user?.name}</span>
+          <div className="user-details">
+            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
+            <div className="user-name-text">{user?.name}</div>
+          </div>
           <button 
             onClick={handleLogout} 
-            className="btn btn-secondary"
-            style={{ color: 'white' }}
+            className="btn-logout"
           >
-            Logout
+            <span className="logout-icon">↪</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </nav>

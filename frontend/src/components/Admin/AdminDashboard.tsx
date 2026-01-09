@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import PendingMembers from './PendingMembers';
 import MemberActivation from './MemberActivation';
@@ -20,6 +20,8 @@ import './AdminDashboard.css';
 const AdminDashboard: React.FC = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -38,32 +40,95 @@ const AdminDashboard: React.FC = () => {
     navigate('/login');
   };
 
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div className="dashboard">
-      <nav className="dashboard-nav">
+      <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}>
         <div className="vanatvam-header">
           <h1 className="vanatvam-title">
             <span className="vanatvam-text">Vanatvam</span>
           </h1>
-          <div className="user-name-display">{user?.name}</div>
         </div>
         <div className="nav-links">
-          <Link to="/admin">📅 Dashboard</Link>
-          <Link to="/admin/member-lookup">🔍 Member Lookup</Link>
-          <Link to="/admin/pending-members" style={{fontWeight: 'bold', backgroundColor: '#34495e'}}>📋 Pending Members</Link>
-          <Link to="/admin/quota-adjustment">💰 Quota Adjustment</Link>
-          <Link to="/admin/inventory-health">🏥 Inventory Health</Link>
-          <Link to="/admin/approval-queue">✅ Approval Queue</Link>
-          <Link to="/admin/maintenance">🔧 Maintenance</Link>
-          <Link to="/admin/settings">⚙️ Settings</Link>
+          <Link 
+            to="/admin" 
+            className={isActive('/admin') && location.pathname === '/admin' ? 'active' : ''}
+          >
+            <span className="nav-icon">📅</span>
+            <span className="nav-text">Dashboard</span>
+          </Link>
+          <Link 
+            to="/admin/member-lookup" 
+            className={isActive('/admin/member-lookup') ? 'active' : ''}
+          >
+            <span className="nav-icon">🔍</span>
+            <span className="nav-text">Member Lookup</span>
+          </Link>
+          <Link 
+            to="/admin/pending-members" 
+            className={isActive('/admin/pending-members') ? 'active' : ''}
+          >
+            <span className="nav-icon">📋</span>
+            <span className="nav-text">Pending Members</span>
+          </Link>
+          <Link 
+            to="/admin/quota-adjustment" 
+            className={isActive('/admin/quota-adjustment') ? 'active' : ''}
+          >
+            <span className="nav-icon">💰</span>
+            <span className="nav-text">Quota Adjustment</span>
+          </Link>
+          <Link 
+            to="/admin/inventory-health" 
+            className={isActive('/admin/inventory-health') ? 'active' : ''}
+          >
+            <span className="nav-icon">🏥</span>
+            <span className="nav-text">Inventory Health</span>
+          </Link>
+          <Link 
+            to="/admin/approval-queue" 
+            className={isActive('/admin/approval-queue') ? 'active' : ''}
+          >
+            <span className="nav-icon">✅</span>
+            <span className="nav-text">Approval Queue</span>
+          </Link>
+          <Link 
+            to="/admin/maintenance" 
+            className={isActive('/admin/maintenance') ? 'active' : ''}
+          >
+            <span className="nav-icon">🔧</span>
+            <span className="nav-text">Maintenance</span>
+          </Link>
+          <Link 
+            to="/admin/settings" 
+            className={isActive('/admin/settings') ? 'active' : ''}
+          >
+            <span className="nav-icon">⚙️</span>
+            <span className="nav-text">Settings</span>
+          </Link>
         </div>
         <div className="user-info">
+          <div className="user-details">
+            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
+            <div className="user-name-text">{user?.name}</div>
+          </div>
           <button 
             onClick={handleLogout} 
-            className="btn btn-secondary"
-            style={{ color: 'white' }}
+            className="btn-logout"
           >
-            Logout
+            <span className="logout-icon">↪</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </nav>

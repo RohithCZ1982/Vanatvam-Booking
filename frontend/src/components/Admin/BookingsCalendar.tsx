@@ -98,7 +98,7 @@ const BookingsCalendar: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Bookings OverviewVanatvam</h2>
+      <h2>Bookings Overview</h2>
       
       <div className="calendar-controls" style={{ marginBottom: '20px' }}>
         <button onClick={previousMonth} className="btn btn-secondary" style={{ padding: '5px 15px', minWidth: 'auto' }}>
