@@ -56,12 +56,12 @@ const PropertyManagement: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Property Management (ADM-06)</h2>
+      <h2>Sanctuary Management (ADM-06)</h2>
       <button 
         onClick={() => setShowForm(!showForm)} 
         className="btn btn-primary" 
         style={{ marginBottom: '20px', padding: '5px 10px', minWidth: 'auto' }}
-        title={showForm ? 'Cancel' : 'Add Property'}
+        title={showForm ? 'Cancel' : 'Add Sanctuary'}
       >
         {showForm ? '↪️' : '➕'}
       </button>
@@ -70,7 +70,7 @@ const PropertyManagement: React.FC = () => {
         <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
           <input
             type="text"
-            placeholder="Property Name"
+            placeholder="Sanctuary Name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
@@ -87,7 +87,7 @@ const PropertyManagement: React.FC = () => {
             type="submit" 
             className="btn btn-primary" 
             disabled={loading}
-            title={loading ? 'Saving...' : editingId ? 'Update Property' : 'Create Property'}
+            title={loading ? 'Saving...' : editingId ? 'Update Sanctuary' : 'Create Sanctuary'}
             style={{ padding: '5px 10px', minWidth: 'auto' }}
           >
             {loading ? '⏳' : editingId ? '💾' : '➕'}
@@ -114,7 +114,7 @@ const PropertyManagement: React.FC = () => {
                 <button 
                   onClick={() => handleEdit(property)} 
                   className="btn btn-secondary"
-                  title="Edit Property"
+                  title="Edit Sanctuary"
                   style={{ padding: '5px 10px', minWidth: 'auto' }}
                 >
                   ✏️

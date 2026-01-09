@@ -101,14 +101,14 @@ const CottageManagement: React.FC = () => {
       <h2>Cottage Inventory (ADM-07)</h2>
       <div style={{ marginBottom: '20px' }}>
         <label>
-          Filter by Property:
+          Filter by Sanctuary:
           <select
             value={filterProperty}
             onChange={(e) => setFilterProperty(e.target.value)}
             className="input"
             style={{ width: '200px', display: 'inline-block', marginLeft: '10px' }}
           >
-            <option value="">All Properties</option>
+            <option value="">All Sanctuaries</option>
             {properties.map((prop) => (
               <option key={prop.id} value={prop.id}>
                 {prop.name}
@@ -134,7 +134,7 @@ const CottageManagement: React.FC = () => {
             required
             className="input"
           >
-            <option value="">Select Property</option>
+            <option value="">Select Sanctuary</option>
             {properties.map((prop) => (
               <option key={prop.id} value={prop.id}>
                 {prop.name}
@@ -181,7 +181,7 @@ const CottageManagement: React.FC = () => {
           <tr>
             <th>ID</th>
             <th>Cottage ID</th>
-            <th>Property</th>
+            <th>Sanctuary</th>
             <th>Capacity</th>
             <th>Amenities</th>
             <th>Actions</th>

@@ -9,7 +9,7 @@ from schemas import (
     UserResponse, PropertyCreate, PropertyResponse, CottageCreate, CottageResponse,
     MaintenanceBlockCreate, MaintenanceBlockResponse, BookingResponse, MemberActivation,
     QuotaAdjustment, BookingDecision, HolidayDate, PeakSeasonCreate, QuotaTransactionResponse,
-    MemberEdit
+    MemberEdit, RevokeBookingRequest
 )
 from auth import get_current_admin_user, get_password_hash
 import calendar
@@ -380,6 +380,51 @@ def get_maintenance_blocks(
 ):
     return db.query(MaintenanceBlock).all()
 
+@router.get("/maintenance-blocks/{block_id}/bookings")
+def get_maintenance_block_bookings(
+    block_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get all bookings that overlap with a maintenance block date range"""
+    block = db.query(MaintenanceBlock).filter(MaintenanceBlock.id == block_id).first()
+    if not block:
+        raise HTTPException(status_code=404, detail="Maintenance block not found")
+    
+    # Find bookings that overlap with maintenance block dates
+    bookings = db.query(Booking).filter(
+        Booking.cottage_id == block.cottage_id,
+        Booking.check_in < block.end_date,
+        Booking.check_out > block.start_date,
+        Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED])
+    ).all()
+    
+    result = []
+    for booking in bookings:
+        user = db.query(User).filter(User.id == booking.user_id).first()
+        cottage = db.query(Cottage).filter(Cottage.id == booking.cottage_id).first()
+        property_obj = None
+        if cottage and cottage.property_id:
+            property_obj = db.query(Property).filter(Property.id == cottage.property_id).first()
+        
+        result.append({
+            "id": booking.id,
+            "user_id": booking.user_id,
+            "user_name": user.name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "property_name": property_obj.name if property_obj else "No Property",
+            "cottage_id": booking.cottage_id,
+            "cottage_name": cottage.cottage_id if cottage else "Unknown",
+            "check_in": booking.check_in,
+            "check_out": booking.check_out,
+            "weekday_credits_used": booking.weekday_credits_used,
+            "weekend_credits_used": booking.weekend_credits_used,
+            "status": booking.status,
+            "created_at": booking.created_at
+        })
+    
+    return result
+
 @router.put("/maintenance-blocks/{block_id}", response_model=MaintenanceBlockResponse)
 def update_maintenance_block(
     block_id: int,
@@ -570,6 +615,7 @@ def make_booking_decision(
 @router.post("/revoke-booking/{booking_id}")
 def revoke_booking(
     booking_id: int,
+    request: RevokeBookingRequest,
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
@@ -577,7 +623,12 @@ def revoke_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
+    if booking.status == BookingStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="Booking already cancelled")
+    
+    reason = request.reason or "Booking revoked by admin"
     booking.status = BookingStatus.CANCELLED
+    booking.decision_notes = reason
     
     # Full refund
     user = db.query(User).filter(User.id == booking.user_id).first()
@@ -591,13 +642,63 @@ def revoke_booking(
             weekday_change=booking.weekday_credits_used,
             weekend_change=booking.weekend_credits_used,
             booking_id=booking.id,
-            description="Booking revoked by admin - quota refunded"
+            description=f"Booking revoked by admin - {reason}"
         )
         db.add(transaction)
     
     db.commit()
     db.refresh(booking)
     return booking
+
+@router.post("/revoke-maintenance-bookings/{block_id}")
+def revoke_all_maintenance_bookings(
+    block_id: int,
+    request: RevokeBookingRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Revoke all bookings that overlap with a maintenance block"""
+    block = db.query(MaintenanceBlock).filter(MaintenanceBlock.id == block_id).first()
+    if not block:
+        raise HTTPException(status_code=404, detail="Maintenance block not found")
+    
+    reason = request.reason or "Booking revoked due to maintenance block"
+    
+    # Find bookings that overlap with maintenance block dates
+    bookings = db.query(Booking).filter(
+        Booking.cottage_id == block.cottage_id,
+        Booking.check_in < block.end_date,
+        Booking.check_out > block.start_date,
+        Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED])
+    ).all()
+    
+    revoked_count = 0
+    for booking in bookings:
+        if booking.status == BookingStatus.CANCELLED:
+            continue
+            
+        booking.status = BookingStatus.CANCELLED
+        booking.decision_notes = reason
+        
+        # Full refund
+        user = db.query(User).filter(User.id == booking.user_id).first()
+        if user:
+            user.weekday_balance += booking.weekday_credits_used
+            user.weekend_balance += booking.weekend_credits_used
+            
+            transaction = QuotaTransaction(
+                user_id=user.id,
+                transaction_type="refund",
+                weekday_change=booking.weekday_credits_used,
+                weekend_change=booking.weekend_credits_used,
+                booking_id=booking.id,
+                description=f"{reason} - quota refunded"
+            )
+            db.add(transaction)
+            revoked_count += 1
+    
+    db.commit()
+    return {"message": f"Successfully revoked {revoked_count} booking(s)", "revoked_count": revoked_count}
 
 # ADM-13: Admin Override Booking
 @router.post("/override-booking")
@@ -894,6 +995,38 @@ def get_bookings_calendar(
     
     return result
 
+# Get all rejected and revoked bookings
+@router.get("/rejected-bookings")
+def get_rejected_bookings(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get all rejected and cancelled (revoked) bookings with owner, sanctuary, and cottage details"""
+    from sqlalchemy.orm import joinedload
+    
+    bookings = db.query(Booking).options(
+        joinedload(Booking.cottage).joinedload(Cottage.property),
+        joinedload(Booking.user)
+    ).filter(
+        Booking.status.in_([BookingStatus.REJECTED, BookingStatus.CANCELLED])
+    ).order_by(Booking.created_at.desc()).all()
+    
+    result = []
+    for booking in bookings:
+        result.append({
+            "id": booking.id,
+            "user_name": booking.user.name if booking.user else "Unknown",
+            "property_name": booking.cottage.property.name if booking.cottage and booking.cottage.property else "No Sanctuary",
+            "cottage_name": booking.cottage.cottage_id if booking.cottage else "Unknown",
+            "check_in": str(booking.check_in),
+            "check_out": str(booking.check_out),
+            "status": booking.status.value,
+            "created_at": booking.created_at,
+            "decision_notes": booking.decision_notes
+        })
+    
+    return result
+
 # ADM-16: Global Quota Reset Trigger
 @router.post("/reset-all-quotas")
 def reset_all_quotas(
@@ -918,4 +1051,123 @@ def reset_all_quotas(
     
     db.commit()
     return {"message": f"Reset quotas for {len(users)} users"}
+
+# Audit Trail - Get all system activities
+@router.get("/audit-trail")
+def get_audit_trail(
+    start_date: date = None,
+    end_date: date = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get comprehensive audit trail including transactions, bookings, activations, etc."""
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import or_
+    
+    audit_entries = []
+    
+    # Get all quota transactions
+    transaction_query = db.query(QuotaTransaction).options(
+        joinedload(QuotaTransaction.user)
+    )
+    if start_date:
+        transaction_query = transaction_query.filter(QuotaTransaction.created_at >= datetime.combine(start_date, datetime.min.time()))
+    if end_date:
+        transaction_query = transaction_query.filter(QuotaTransaction.created_at <= datetime.combine(end_date, datetime.max.time()))
+    
+    transactions = transaction_query.order_by(QuotaTransaction.created_at.desc()).all()
+    
+    for trans in transactions:
+        user = trans.user
+        property_name = "N/A"
+        if user and user.property_id:
+            property_obj = db.query(Property).filter(Property.id == user.property_id).first()
+            property_name = property_obj.name if property_obj else "N/A"
+        
+        audit_entries.append({
+            "id": trans.id,
+            "timestamp": trans.created_at.isoformat() if trans.created_at else datetime.now().isoformat(),
+            "type": "Transaction",
+            "action": trans.transaction_type.upper(),
+            "user_name": user.name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "property_name": property_name,
+            "description": trans.description or f"{trans.transaction_type} transaction",
+            "weekday_change": trans.weekday_change,
+            "weekend_change": trans.weekend_change,
+            "booking_id": trans.booking_id,
+            "details": f"Weekday: {trans.weekday_change:+d}, Weekend: {trans.weekend_change:+d}"
+        })
+    
+    # Get all bookings with status changes (rejected, cancelled, confirmed)
+    booking_query = db.query(Booking).options(
+        joinedload(Booking.user),
+        joinedload(Booking.cottage).joinedload(Cottage.property)
+    ).filter(
+        Booking.status.in_([BookingStatus.REJECTED, BookingStatus.CANCELLED, BookingStatus.CONFIRMED])
+    )
+    if start_date:
+        booking_query = booking_query.filter(Booking.created_at >= datetime.combine(start_date, datetime.min.time()))
+    if end_date:
+        booking_query = booking_query.filter(Booking.created_at <= datetime.combine(end_date, datetime.max.time()))
+    
+    bookings = booking_query.order_by(Booking.created_at.desc()).all()
+    
+    for booking in bookings:
+        user = booking.user
+        cottage = booking.cottage
+        property_name = cottage.property.name if cottage and cottage.property else "N/A"
+        
+        action_map = {
+            BookingStatus.REJECTED: "Booking Rejected",
+            BookingStatus.CANCELLED: "Booking Revoked",
+            BookingStatus.CONFIRMED: "Booking Confirmed"
+        }
+        
+        timestamp = booking.updated_at or booking.created_at
+        audit_entries.append({
+            "id": booking.id,
+            "timestamp": timestamp.isoformat() if timestamp else datetime.now().isoformat(),
+            "type": "Booking",
+            "action": action_map.get(booking.status, booking.status.value.upper()),
+            "user_name": user.name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "property_name": property_name,
+            "description": booking.decision_notes or f"Booking {booking.status.value}",
+            "weekday_change": -booking.weekday_credits_used if booking.status == BookingStatus.CONFIRMED else booking.weekday_credits_used,
+            "weekend_change": -booking.weekend_credits_used if booking.status == BookingStatus.CONFIRMED else booking.weekend_credits_used,
+            "booking_id": booking.id,
+            "details": f"Cottage: {cottage.cottage_id if cottage else 'Unknown'}, Dates: {booking.check_in} to {booking.check_out}"
+        })
+    
+    # Get member activations (from transactions with type "activation")
+    activation_transactions = [t for t in transactions if t.transaction_type == "activation"]
+    for trans in activation_transactions:
+        user = trans.user
+        property_name = "N/A"
+        if user and user.property_id:
+            property_obj = db.query(Property).filter(Property.id == user.property_id).first()
+            property_name = property_obj.name if property_obj else "N/A"
+        
+        # Check if this activation entry already exists (might be duplicate with transaction)
+        if not any(e["id"] == trans.id and e["type"] == "Activation" for e in audit_entries):
+            audit_entries.append({
+                "id": f"act_{trans.id}",
+                "timestamp": trans.created_at.isoformat() if trans.created_at else datetime.now().isoformat(),
+                "type": "Activation",
+                "action": "Member Activated",
+                "user_name": user.name if user else "Unknown",
+                "user_email": user.email if user else "Unknown",
+                "property_name": property_name,
+                "description": trans.description or "Member account activated",
+                "weekday_change": trans.weekday_change,
+                "weekend_change": trans.weekend_change,
+                "booking_id": None,
+                "details": f"Initial quota: Weekday {trans.weekday_change}, Weekend {trans.weekend_change}"
+            })
+    
+    # Sort all entries by timestamp
+    audit_entries.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    return audit_entries
 

@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
       <div className="card">
         <h2>Welcome, {dashboardData.user.name}! 👋</h2>
         <p style={{ fontSize: '16px', color: '#6c757d', marginTop: '10px' }}>
-          <strong>Property:</strong> {dashboardData.property?.name}
+          <strong>Sanctuary:</strong> {dashboardData.property?.name}
         </p>
       </div>
 

@@ -57,14 +57,14 @@ const MemberActivation: React.FC = () => {
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <label>
-          Property:
+          Sanctuary:
           <select
             value={formData.property_id}
             onChange={(e) => setFormData({ ...formData, property_id: e.target.value })}
             required
             className="input"
           >
-            <option value="">Select Property</option>
+            <option value="">Select Sanctuary</option>
             {properties.map((prop) => (
               <option key={prop.id} value={prop.id}>
                 {prop.name}

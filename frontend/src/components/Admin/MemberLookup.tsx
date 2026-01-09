@@ -49,9 +49,9 @@ const MemberLookup: React.FC = () => {
   };
 
   const getPropertyName = (propertyId: number | null): string => {
-    if (!propertyId) return 'No Property';
+    if (!propertyId) return 'No Sanctuary';
     const property = properties.find(p => p.id === propertyId);
-    return property ? property.name : 'Unknown Property';
+    return property ? property.name : 'Unknown Sanctuary';
   };
 
   const handleSearch = async () => {
@@ -166,7 +166,7 @@ const MemberLookup: React.FC = () => {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
-          placeholder="Search by name, email, phone, or property name"
+          placeholder="Search by name, email, phone, or sanctuary name"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="input"
@@ -190,7 +190,7 @@ const MemberLookup: React.FC = () => {
               <th>Name</th>
               <th>Email</th>
               <th>Phone</th>
-              <th>Property</th>
+              <th>Sanctuary</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>

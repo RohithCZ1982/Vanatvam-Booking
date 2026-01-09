@@ -47,6 +47,56 @@ const InventoryHealth: React.FC = () => {
     }
   };
 
+  const getStatusStyle = (status: string) => {
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case 'available':
+        return {
+          backgroundColor: '#28a745',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontWeight: '600',
+          display: 'inline-block'
+        };
+      case 'booked':
+        return {
+          backgroundColor: '#007bff',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontWeight: '600',
+          display: 'inline-block'
+        };
+      case 'maintenance':
+        return {
+          backgroundColor: '#ffc107',
+          color: '#000',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontWeight: '600',
+          display: 'inline-block'
+        };
+      default:
+        return {
+          backgroundColor: '#6c757d',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontWeight: '600',
+          display: 'inline-block'
+        };
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   return (
     <div className="card">
       <h2>Inventory Health View (ADM-09)</h2>
@@ -71,7 +121,7 @@ const InventoryHealth: React.FC = () => {
           className="input"
           style={{ width: '200px', display: 'inline-block', marginRight: '10px' }}
         >
-          <option value="">All Properties</option>
+          <option value="">All Sanctuaries</option>
           {properties.map((property) => (
             <option key={property.id} value={property.id}>
               {property.name}
@@ -94,7 +144,7 @@ const InventoryHealth: React.FC = () => {
           <thead>
             <tr>
               <th>Date</th>
-              <th>Property</th>
+              <th>Sanctuary</th>
               <th>Cottage</th>
               <th>Status</th>
             </tr>
@@ -103,10 +153,12 @@ const InventoryHealth: React.FC = () => {
             {healthData.map((item, index) => (
               <tr key={index}>
                 <td>{new Date(item.date).toLocaleDateString()}</td>
-                <td>{item.property_name || 'No Property'}</td>
+                <td>{item.property_name || 'No Sanctuary'}</td>
                 <td>{item.cottage_name}</td>
                 <td>
-                  <span className={`badge badge-${item.status}`}>{item.status}</span>
+                  <span style={getStatusStyle(item.status)}>
+                    {formatStatus(item.status)}
+                  </span>
                 </td>
               </tr>
             ))}

@@ -144,6 +144,9 @@ class BookingDecision(BaseModel):
     action: str  # "approve" or "reject"
     notes: Optional[str] = None
 
+class RevokeBookingRequest(BaseModel):
+    reason: Optional[str] = None
+
 # Calendar Schemas
 class HolidayDate(BaseModel):
     date: date

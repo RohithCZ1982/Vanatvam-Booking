@@ -4,10 +4,12 @@ import CottageManagement from './CottageManagement';
 import QuotaReset from './QuotaReset';
 import HolidayConfiguration from './HolidayConfiguration';
 import PeakSeasonManagement from './PeakSeasonManagement';
+import RejectedBookings from './RejectedBookings';
+import AuditTrail from './AuditTrail';
 import './Settings.css';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons'>('properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons' | 'rejected-bookings' | 'audit-trail'>('properties');
 
   return (
     <div className="card">
@@ -18,7 +20,7 @@ const Settings: React.FC = () => {
           className={`tab-button ${activeTab === 'properties' ? 'active' : ''}`}
           onClick={() => setActiveTab('properties')}
         >
-          🏠 Properties
+          🏠 Sanctuaries
         </button>
         <button
           className={`tab-button ${activeTab === 'cottages' ? 'active' : ''}`}
@@ -43,6 +45,18 @@ const Settings: React.FC = () => {
           onClick={() => setActiveTab('peak-seasons')}
         >
           📅 Peak Seasons
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'rejected-bookings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('rejected-bookings')}
+        >
+          ❌ Rejected Bookings
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'audit-trail' ? 'active' : ''}`}
+          onClick={() => setActiveTab('audit-trail')}
+        >
+          📋 Audit Trail
         </button>
       </div>
 
@@ -70,6 +84,16 @@ const Settings: React.FC = () => {
         {activeTab === 'peak-seasons' && (
           <div className="settings-tab-content">
             <PeakSeasonManagement />
+          </div>
+        )}
+        {activeTab === 'rejected-bookings' && (
+          <div className="settings-tab-content">
+            <RejectedBookings />
+          </div>
+        )}
+        {activeTab === 'audit-trail' && (
+          <div className="settings-tab-content">
+            <AuditTrail />
           </div>
         )}
       </div>

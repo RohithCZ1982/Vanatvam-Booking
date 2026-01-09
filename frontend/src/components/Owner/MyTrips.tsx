@@ -168,7 +168,7 @@ const MyTrips: React.FC = () => {
                 borderRadius: '8px',
                 border: '1px solid #dee2e6',
               }}>
-                <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '5px' }}>Property</div>
+                <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '5px' }}>Sanctuary</div>
                 <div style={{ fontSize: '16px', fontWeight: '600', color: '#495057' }}>
                   {selectedBooking.property}
                 </div>

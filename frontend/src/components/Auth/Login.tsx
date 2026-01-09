@@ -31,7 +31,8 @@ const Login: React.FC = () => {
       await login(email, password);
       // Navigation will happen via useEffect when user state updates
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed');
+      const errorMessage = err.response?.data?.detail || err.message || 'Invalid email or password. Please try again.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -39,36 +40,79 @@ const Login: React.FC = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Vanatvam</h1>
-        <h2>Login</h2>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="input"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="input"
-          />
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+        <div className="auth-header">
+          <h1 className="auth-logo">Vanatvam</h1>
+          <h2 className="auth-subtitle">Welcome Back</h2>
+          <p className="auth-description">Sign in to your account</p>
+        </div>
+        
+        {error && (
+          <div className="error-message" role="alert">
+            <span className="error-icon">⚠️</span>
+            <span className="error-text">{error}</span>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(''); // Clear error when user types
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="forgot-password-link">
+            <a href="/forgot-password">Forgot Password?</a>
+          </div>
+          
+          <button 
+            type="submit" 
+            className="auth-button" 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Logging in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
-        <p>
-          <a href="/forgot-password" style={{color: '#007bff', textDecoration: 'none'}}>Forgot Password?</a>
-        </p>
-        <p>
-          Don't have an account? <a href="/register">Register</a>
-        </p>
+        
+        <div className="auth-footer">
+          <p>
+            Don't have an account? <a href="/register">Create Account</a>
+          </p>
+        </div>
       </div>
     </div>
   );

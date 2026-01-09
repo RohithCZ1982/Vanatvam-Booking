@@ -72,9 +72,9 @@ const QuotaAdjustment: React.FC = () => {
   };
 
   const getPropertyName = (propertyId: number | null): string => {
-    if (!propertyId) return 'No Property';
+    if (!propertyId) return 'No Sanctuary';
     const property = properties.find(p => p.id === propertyId);
-    return property ? property.name : 'Unknown Property';
+    return property ? property.name : 'Unknown Sanctuary';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
