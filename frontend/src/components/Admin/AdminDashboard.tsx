@@ -15,7 +15,6 @@ import HolidayConfiguration from './HolidayConfiguration';
 import PeakSeasonManagement from './PeakSeasonManagement';
 import QuotaReset from './QuotaReset';
 import BookingsCalendar from './BookingsCalendar';
-import Reports from './Reports';
 import './AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
@@ -130,13 +129,6 @@ const AdminDashboard: React.FC = () => {
             <span className="nav-icon">⚙️</span>
             <span className="nav-text">Settings</span>
           </Link>
-          <Link 
-            to="/admin/reports" 
-            className={isActive('/admin/reports') ? 'active' : ''}
-          >
-            <span className="nav-icon">📊</span>
-            <span className="nav-text">Reports</span>
-          </Link>
         </div>
         <div className="user-info">
           <div className="user-details">
@@ -167,7 +159,6 @@ const AdminDashboard: React.FC = () => {
           <Route path="holidays" element={<HolidayConfiguration />} />
           <Route path="peak-seasons" element={<PeakSeasonManagement />} />
           <Route path="quota-reset" element={<QuotaReset />} />
-          <Route path="reports" element={<Reports />} />
           <Route path="" element={<BookingsCalendar />} />
         </Routes>
       </div>

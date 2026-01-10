@@ -40,9 +40,12 @@ const Reports: React.FC = () => {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [todayStats, setTodayStats] = useState<any>(null);
+  const [todayStatsLoading, setTodayStatsLoading] = useState(true);
 
   useEffect(() => {
     fetchStatistics();
+    fetchTodayStats();
   }, []);
 
   const fetchStatistics = async () => {
@@ -59,10 +62,59 @@ const Reports: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const fetchTodayStats = async () => {
+    try {
+      setTodayStatsLoading(true);
+      const [pendingMembersRes, pendingBookingsRes, bookingsRes, maintenanceRes] = await Promise.all([
+        api.get('/api/admin/pending-members'),
+        api.get('/api/admin/approval-queue'),
+        api.get('/api/admin/bookings-calendar'),
+        api.get('/api/admin/maintenance-blocks')
+      ]);
+
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      // Number of pending requests (pending members)
+      const noOfPendingRequests = pendingMembersRes.data.length;
+      
+      // Number of pending bookings for approval
+      const noOfPendingBookings = pendingBookingsRes.data.length;
+      
+      // Number of bookings for today (confirmed and pending)
+      const todayBookings = bookingsRes.data.filter((booking: any) => {
+        const checkIn = new Date(booking.check_in);
+        const checkOut = new Date(booking.check_out);
+        const todayDate = new Date(todayStr);
+        return todayDate >= checkIn && todayDate <= checkOut;
+      });
+      const noOfBookings = todayBookings.length;
+      
+      // Number of maintenance cottages for today (count unique cottages)
+      const todayMaintenanceCottages = maintenanceRes.data.filter((block: any) => {
+        const start = new Date(block.start_date + 'T00:00:00');
+        const end = new Date(block.end_date + 'T23:59:59');
+        return today >= start && today <= end;
+      });
+      const uniqueMaintenanceCottages = new Set(todayMaintenanceCottages.map((block: any) => block.cottage_id));
+      const noOfMaintenanceCottages = uniqueMaintenanceCottages.size;
+      
+      setTodayStats({
+        noOfPendingRequests,
+        noOfPendingBookings,
+        noOfBookings,
+        noOfMaintenanceCottages
+      });
+    } catch (err: any) {
+      console.error('Error fetching today stats:', err);
+    } finally {
+      setTodayStatsLoading(false);
+    }
+  };
+
+  if (loading || todayStatsLoading) {
     return (
-      <div className="card">
-        <h2>Reports</h2>
+      <div>
         <div style={{ textAlign: 'center', padding: '40px' }}>Loading statistics...</div>
       </div>
     );
@@ -70,29 +122,69 @@ const Reports: React.FC = () => {
 
   if (error) {
     return (
-      <div className="card">
-        <h2>Reports</h2>
-        <div style={{ color: '#dc3545', padding: '20px', backgroundColor: '#f8d7da', borderRadius: '4px' }}>
+      <div>
+        <div style={{ color: '#dc3545', padding: '20px', backgroundColor: '#f8d7da', borderRadius: '4px', marginBottom: '20px' }}>
           {error}
         </div>
       </div>
     );
   }
 
-  if (!data) {
-    return (
-      <div className="card">
-        <h2>Reports</h2>
-        <div style={{ textAlign: 'center', padding: '40px' }}>No data available</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="card">
-      <h2>Reports & Statistics</h2>
+    <div>
+      {/* Today's Statistics Table */}
+      <div style={{ marginBottom: '30px' }}>
+        <h3 style={{ marginBottom: '15px', fontSize: '18px', color: '#333' }}>
+          Today's Statistics ({new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
+        </h3>
+        {todayStats ? (
+          <table className="table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#34495e', color: 'white' }}>
+                <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Metric</th>
+                <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #ddd' }}>Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Pending Requests</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#ffc107' }}>
+                  {todayStats.noOfPendingRequests}
+                </td>
+              </tr>
+              <tr style={{ backgroundColor: '#f9f9f9' }}>
+                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Pending Bookings for Approval</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#ff9800' }}>
+                  {todayStats.noOfPendingBookings}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Bookings</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
+                  {todayStats.noOfBookings}
+                </td>
+              </tr>
+              <tr style={{ backgroundColor: '#f9f9f9' }}>
+                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Maintenance Cottages</td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#dc3545' }}>
+                  {todayStats.noOfMaintenanceCottages}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#6c757d' }}>No statistics available for today</div>
+        )}
+      </div>
+
+      {/* Main Reports Content */}
+      {!data ? (
+        <div style={{ textAlign: 'center', padding: '40px' }}>No data available</div>
+      ) : (
+        <>
+          <h3 style={{ marginBottom: '20px', fontSize: '20px', color: '#333' }}>Analytics & Trends</h3>
       
-      {/* Summary Cards */}
+          {/* Summary Cards */}
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
@@ -258,77 +350,79 @@ const Reports: React.FC = () => {
         </div>
       </div>
 
-      {/* Additional Statistics Table */}
-      <div style={{ marginTop: '40px' }}>
-        <h3 style={{ marginBottom: '20px', color: '#333' }}>Detailed Statistics</h3>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-          gap: '20px' 
-        }}>
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: '#f9f9f9', 
-            borderRadius: '8px',
-            border: '1px solid #e0e0e0'
-          }}>
-            <h4 style={{ marginBottom: '15px', color: '#555' }}>User Statistics</h4>
-            <table style={{ width: '100%' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Total Users:</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{data.users.total}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Active:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#28a745' }}>{data.users.active}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Pending:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#ffc107' }}>{data.users.pending}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Suspended:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#dc3545' }}>{data.users.suspended}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Additional Statistics Table */}
+          <div style={{ marginTop: '40px' }}>
+            <h3 style={{ marginBottom: '20px', color: '#333' }}>Detailed Statistics</h3>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+              gap: '20px' 
+            }}>
+              <div style={{ 
+                padding: '20px', 
+                backgroundColor: '#f9f9f9', 
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0'
+              }}>
+                <h4 style={{ marginBottom: '15px', color: '#555' }}>User Statistics</h4>
+                <table style={{ width: '100%' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Total Users:</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{data.users.total}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Active:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#28a745' }}>{data.users.active}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Pending:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#ffc107' }}>{data.users.pending}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Suspended:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc3545' }}>{data.users.suspended}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: '#f9f9f9', 
-            borderRadius: '8px',
-            border: '1px solid #e0e0e0'
-          }}>
-            <h4 style={{ marginBottom: '15px', color: '#555' }}>Booking Statistics</h4>
-            <table style={{ width: '100%' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Total Bookings:</td>
-                  <td style={{ padding: '8px', textAlign: 'right' }}>{data.bookings.total}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Confirmed:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#28a745' }}>{data.bookings.confirmed}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Pending:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#ffc107' }}>{data.bookings.pending}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Rejected:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#dc3545' }}>{data.bookings.rejected}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', fontWeight: '500' }}>Cancelled:</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: '#6c757d' }}>{data.bookings.cancelled}</td>
-                </tr>
-              </tbody>
-            </table>
+              <div style={{ 
+                padding: '20px', 
+                backgroundColor: '#f9f9f9', 
+                borderRadius: '8px',
+                border: '1px solid #e0e0e0'
+              }}>
+                <h4 style={{ marginBottom: '15px', color: '#555' }}>Booking Statistics</h4>
+                <table style={{ width: '100%' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Total Bookings:</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{data.bookings.total}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Confirmed:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#28a745' }}>{data.bookings.confirmed}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Pending:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#ffc107' }}>{data.bookings.pending}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Rejected:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc3545' }}>{data.bookings.rejected}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>Cancelled:</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#6c757d' }}>{data.bookings.cancelled}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

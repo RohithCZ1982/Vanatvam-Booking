@@ -10,40 +10,56 @@
   top: 20px;
   left: 20px;
   z-index: 1001;
-  background-color: #2c3e50;
-  border: none;
+  background: rgba(44, 62, 80, 0.25);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 10px;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   flex-direction: column;
   gap: 5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
 }
 
 .menu-toggle span {
   display: block;
   width: 25px;
   height: 3px;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 2px;
   transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .menu-toggle:hover {
-  background-color: #34495e;
+  background: rgba(44, 62, 80, 0.35);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
 .dashboard-nav {
   width: 280px;
-  background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+  background: rgba(44, 62, 80, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   color: white;
   padding: 24px 20px;
   position: fixed;
   height: 100vh;
   overflow-y: auto;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    2px 0 20px rgba(0, 0, 0, 0.3),
+    inset -1px 0 0 rgba(255, 255, 255, 0.1);
   z-index: 1000;
   transition: transform 0.3s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .dashboard-nav h1 {
@@ -53,9 +69,18 @@
 
 .vanatvam-header {
   margin-bottom: 40px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .vanatvam-logo-container {
@@ -117,10 +142,10 @@
 }
 
 .nav-links a {
-  color: #ecf0f1;
+  color: rgba(255, 255, 255, 0.95);
   text-decoration: none;
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -129,6 +154,14 @@
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .nav-links a::before {
@@ -138,15 +171,23 @@
   top: 0;
   height: 100%;
   width: 4px;
-  background-color: #27ae60;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 100%);
   transform: scaleY(0);
   transition: transform 0.3s ease;
+  border-radius: 12px 0 0 12px;
 }
 
 .nav-links a:hover {
-  background-color: rgba(52, 73, 94, 0.6);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-color: rgba(255, 255, 255, 0.25);
   transform: translateX(4px);
   color: white;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 .nav-links a:hover::before {
@@ -154,16 +195,22 @@
 }
 
 .nav-links a.active {
-  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+  background: rgba(39, 174, 96, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-color: rgba(39, 174, 96, 0.5);
+  box-shadow: 
+    0 4px 16px rgba(39, 174, 96, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(39, 174, 96, 0.2);
   font-weight: 600;
 }
 
 .nav-links a.active::before {
   transform: scaleY(1);
   width: 4px;
-  background-color: white;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%);
 }
 
 .nav-links a.active .nav-icon {
@@ -185,10 +232,15 @@
 .user-info {
   margin-top: auto;
   padding-top: 24px;
-  border-top: 2px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: #1a252f;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .user-details {
@@ -196,8 +248,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  background: #233240;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -205,14 +257,15 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  background: #27ae60;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
   color: white;
-  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .user-name-text {
@@ -226,9 +279,9 @@
 }
 
 .btn-logout {
-  background: transparent;
-  color: #e74c3c;
-  border: 2px solid #e74c3c;
+  background: #c0392b;
+  color: white;
+  border: 1px solid #a93226;
   padding: 12px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -242,6 +295,7 @@
   width: 100%;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-logout::before {
@@ -251,20 +305,29 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-  transition: left 0.3s ease;
-  z-index: -1;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+  z-index: 1;
 }
 
 .btn-logout:hover {
-  color: white;
-  border-color: #c0392b;
+  background: #a93226;
+  border-color: #922b21;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.4);
 }
 
 .btn-logout:hover::before {
-  left: 0;
+  left: 100%;
+}
+
+.btn-logout:active {
+  transform: translateY(0);
+}
+
+.btn-logout span {
+  position: relative;
+  z-index: 2;
 }
 
 .btn-logout:active {
@@ -310,20 +373,32 @@
 
 /* Scrollbar Styling */
 .dashboard-nav::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .dashboard-nav::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 4px;
 }
 
 .dashboard-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .pending-screen {

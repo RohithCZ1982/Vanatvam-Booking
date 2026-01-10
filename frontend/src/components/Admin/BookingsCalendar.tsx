@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import Reports from './Reports';
 import './BookingsCalendar.css';
+import './Settings.css';
 
 interface Booking {
   id: number;
@@ -34,12 +36,11 @@ interface MaintenanceBlock {
 }
 
 const BookingsCalendar: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'calendar' | 'reports'>('calendar');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [peakSeasons, setPeakSeasons] = useState<PeakSeason[]>([]);
   const [maintenanceBlocks, setMaintenanceBlocks] = useState<MaintenanceBlock[]>([]);
-  const [pendingMembers, setPendingMembers] = useState<any[]>([]);
-  const [pendingBookings, setPendingBookings] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -51,20 +52,16 @@ const BookingsCalendar: React.FC = () => {
 
   const fetchAllData = async () => {
     try {
-      const [bookingsRes, holidaysRes, peakSeasonsRes, maintenanceRes, pendingMembersRes, pendingBookingsRes] = await Promise.all([
+      const [bookingsRes, holidaysRes, peakSeasonsRes, maintenanceRes] = await Promise.all([
         api.get('/api/admin/bookings-calendar'),
         api.get('/api/admin/holidays'),
         api.get('/api/admin/peak-seasons'),
-        api.get('/api/admin/maintenance-blocks'),
-        api.get('/api/admin/pending-members'),
-        api.get('/api/admin/approval-queue')
+        api.get('/api/admin/maintenance-blocks')
       ]);
       setBookings(bookingsRes.data);
       setHolidays(holidaysRes.data);
       setPeakSeasons(peakSeasonsRes.data);
       setMaintenanceBlocks(maintenanceRes.data);
-      setPendingMembers(pendingMembersRes.data);
-      setPendingBookings(pendingBookingsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -224,95 +221,39 @@ const BookingsCalendar: React.FC = () => {
   const days = getDaysInMonth(currentDate);
   const selectedDateBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
 
-  // Calculate statistics for current day
-  const getTodayStats = () => {
-    const today = new Date();
-    const todayStr = formatDateLocal(today);
-    
-    // Number of pending requests (pending members)
-    const noOfPendingRequests = pendingMembers.length;
-    
-    // Number of pending bookings for approval
-    const noOfPendingBookings = pendingBookings.length;
-    
-    // Number of bookings for today (confirmed and pending)
-    const todayBookings = bookings.filter(booking => {
-      const checkIn = new Date(booking.check_in);
-      const checkOut = new Date(booking.check_out);
-      const todayDate = new Date(todayStr);
-      return todayDate >= checkIn && todayDate <= checkOut;
-    });
-    const noOfBookings = todayBookings.length;
-    
-    // Number of maintenance cottages for today (count unique cottages)
-    const todayMaintenanceCottages = maintenanceBlocks.filter(block => {
-      const start = new Date(block.start_date + 'T00:00:00');
-      const end = new Date(block.end_date + 'T23:59:59');
-      return today >= start && today <= end;
-    });
-    const uniqueMaintenanceCottages = new Set(todayMaintenanceCottages.map(block => block.cottage_id));
-    const noOfMaintenanceCottages = uniqueMaintenanceCottages.size;
-    
-    return {
-      noOfPendingRequests,
-      noOfPendingBookings,
-      noOfBookings,
-      noOfMaintenanceCottages
-    };
-  };
-
-  const todayStats = getTodayStats();
-
-  if (loading) {
+  if (loading && activeTab === 'calendar') {
     return <div className="card">Loading calendar...</div>;
   }
 
   return (
     <div className="card">
-      <h2>Bookings Overview</h2>
+      <h2>Dashboard</h2>
       
-      {/* Statistics Table for Current Day */}
-      <div style={{ marginBottom: '30px', marginTop: '20px' }}>
-        <h3 style={{ marginBottom: '15px', fontSize: '18px', color: '#333' }}>
-          Today's Statistics ({new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
-        </h3>
-        <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#34495e', color: 'white' }}>
-              <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Metric</th>
-              <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #ddd' }}>Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Pending Requests</td>
-              <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#ffc107' }}>
-                {todayStats.noOfPendingRequests}
-              </td>
-            </tr>
-            <tr style={{ backgroundColor: '#f9f9f9' }}>
-              <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Pending Bookings for Approval</td>
-              <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#ff9800' }}>
-                {todayStats.noOfPendingBookings}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Bookings</td>
-              <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
-                {todayStats.noOfBookings}
-              </td>
-            </tr>
-            <tr style={{ backgroundColor: '#f9f9f9' }}>
-              <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: '500' }}>No. of Maintenance Cottages</td>
-              <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#dc3545' }}>
-                {todayStats.noOfMaintenanceCottages}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Tabs */}
+      <div className="settings-tabs" style={{ marginTop: '20px' }}>
+        <button
+          className={`tab-button ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          📅 Bookings Calendar
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'reports' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reports')}
+        >
+          📊 Reports
+        </button>
       </div>
-      
-      <div className="calendar-controls" style={{ marginBottom: '20px' }}>
+
+      {/* Tab Content */}
+      <div className="settings-content">
+        {activeTab === 'calendar' && (
+          <div className="settings-tab-content">
+            {loading ? (
+              <div>Loading calendar...</div>
+            ) : (
+              <>
+                <div className="calendar-controls" style={{ marginBottom: '20px' }}>
         <button onClick={previousMonth} className="btn btn-secondary" style={{ padding: '5px 15px', minWidth: 'auto' }}>
           ← Previous
         </button>
@@ -479,6 +420,16 @@ const BookingsCalendar: React.FC = () => {
           )}
         </div>
       )}
+              </>
+            )}
+          </div>
+        )}
+        {activeTab === 'reports' && (
+          <div className="settings-tab-content">
+            <Reports />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
