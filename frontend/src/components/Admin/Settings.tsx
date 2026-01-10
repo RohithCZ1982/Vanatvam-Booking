@@ -6,10 +6,11 @@ import HolidayConfiguration from './HolidayConfiguration';
 import PeakSeasonManagement from './PeakSeasonManagement';
 import RejectedBookings from './RejectedBookings';
 import AuditTrail from './AuditTrail';
+import AddAdmin from './AddAdmin';
 import './Settings.css';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons' | 'rejected-bookings' | 'audit-trail'>('properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons' | 'rejected-bookings' | 'audit-trail' | 'add-admin'>('properties');
 
   return (
     <div className="card">
@@ -58,6 +59,12 @@ const Settings: React.FC = () => {
         >
           📋 Audit Trail
         </button>
+        <button
+          className={`tab-button ${activeTab === 'add-admin' ? 'active' : ''}`}
+          onClick={() => setActiveTab('add-admin')}
+        >
+          👤 Add Admin
+        </button>
       </div>
 
       <div className="settings-content">
@@ -94,6 +101,11 @@ const Settings: React.FC = () => {
         {activeTab === 'audit-trail' && (
           <div className="settings-tab-content">
             <AuditTrail />
+          </div>
+        )}
+        {activeTab === 'add-admin' && (
+          <div className="settings-tab-content">
+            <AddAdmin />
           </div>
         )}
       </div>

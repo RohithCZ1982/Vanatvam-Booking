@@ -157,6 +157,12 @@ class PeakSeasonCreate(BaseModel):
     start_date: date
     end_date: date
 
+class AdminCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: str
+
 # Quota Transaction Schema
 class QuotaTransactionResponse(BaseModel):
     id: int

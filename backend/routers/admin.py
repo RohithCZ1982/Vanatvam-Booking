@@ -9,7 +9,7 @@ from schemas import (
     UserResponse, PropertyCreate, PropertyResponse, CottageCreate, CottageResponse,
     MaintenanceBlockCreate, MaintenanceBlockResponse, BookingResponse, MemberActivation,
     QuotaAdjustment, BookingDecision, HolidayDate, PeakSeasonCreate, QuotaTransactionResponse,
-    MemberEdit, RevokeBookingRequest
+    MemberEdit, RevokeBookingRequest, AdminCreate
 )
 from auth import get_current_admin_user, get_password_hash
 import calendar
@@ -1170,4 +1170,143 @@ def get_audit_trail(
     audit_entries.sort(key=lambda x: x["timestamp"], reverse=True)
     
     return audit_entries
+
+# Create Admin User
+@router.post("/create-admin", response_model=UserResponse)
+def create_admin_user(
+    admin_data: AdminCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Create a new admin user. Only existing admins can create other admins."""
+    # Check if user with this email already exists
+    existing = db.query(User).filter(User.email == admin_data.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+    
+    # Create new admin user
+    admin_user = User(
+        email=admin_data.email,
+        password_hash=get_password_hash(admin_data.password),
+        name=admin_data.name,
+        phone=admin_data.phone,
+        role=UserRole.ADMIN,
+        status=UserStatus.ACTIVE,
+        weekday_quota=0,
+        weekend_quota=0,
+        weekday_balance=0,
+        weekend_balance=0,
+        property_id=None
+    )
+    
+    db.add(admin_user)
+    db.commit()
+    db.refresh(admin_user)
+    
+    return admin_user
+
+# Reports and Statistics
+@router.get("/reports/statistics")
+def get_reports_statistics(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get statistics data for reports and graphs"""
+    from sqlalchemy import func, extract
+    
+    # Total users by status
+    total_users = db.query(User).filter(User.role == UserRole.OWNER).count()
+    active_users = db.query(User).filter(User.role == UserRole.OWNER, User.status == UserStatus.ACTIVE).count()
+    pending_users = db.query(User).filter(User.role == UserRole.OWNER, User.status == UserStatus.PENDING).count()
+    suspended_users = db.query(User).filter(User.role == UserRole.OWNER, User.status == UserStatus.SUSPENDED).count()
+    
+    # Total bookings by status
+    total_bookings = db.query(Booking).count()
+    confirmed_bookings = db.query(Booking).filter(Booking.status == BookingStatus.CONFIRMED).count()
+    pending_bookings = db.query(Booking).filter(Booking.status == BookingStatus.PENDING).count()
+    rejected_bookings = db.query(Booking).filter(Booking.status == BookingStatus.REJECTED).count()
+    cancelled_bookings = db.query(Booking).filter(Booking.status == BookingStatus.CANCELLED).count()
+    
+    # Users registered over last 12 months
+    twelve_months_ago = datetime.now() - timedelta(days=365)
+    users_over_time = db.query(
+        extract('year', User.created_at).label('year'),
+        extract('month', User.created_at).label('month'),
+        func.count(User.id).label('count')
+    ).filter(
+        User.created_at >= twelve_months_ago,
+        User.role == UserRole.OWNER
+    ).group_by(
+        extract('year', User.created_at),
+        extract('month', User.created_at)
+    ).order_by(
+        extract('year', User.created_at),
+        extract('month', User.created_at)
+    ).all()
+    
+    users_timeline = []
+    for row in users_over_time:
+        month_name = datetime(int(row.year), int(row.month), 1).strftime('%b %Y')
+        users_timeline.append({
+            'month': month_name,
+            'count': row.count
+        })
+    
+    # Bookings created over last 12 months
+    bookings_over_time = db.query(
+        extract('year', Booking.created_at).label('year'),
+        extract('month', Booking.created_at).label('month'),
+        func.count(Booking.id).label('count')
+    ).filter(
+        Booking.created_at >= twelve_months_ago
+    ).group_by(
+        extract('year', Booking.created_at),
+        extract('month', Booking.created_at)
+    ).order_by(
+        extract('year', Booking.created_at),
+        extract('month', Booking.created_at)
+    ).all()
+    
+    bookings_timeline = []
+    for row in bookings_over_time:
+        month_name = datetime(int(row.year), int(row.month), 1).strftime('%b %Y')
+        bookings_timeline.append({
+            'month': month_name,
+            'count': row.count
+        })
+    
+    # Bookings by status for pie chart
+    bookings_by_status = [
+        {'name': 'Confirmed', 'value': confirmed_bookings},
+        {'name': 'Pending', 'value': pending_bookings},
+        {'name': 'Rejected', 'value': rejected_bookings},
+        {'name': 'Cancelled', 'value': cancelled_bookings}
+    ]
+    
+    # Users by status for pie chart
+    users_by_status = [
+        {'name': 'Active', 'value': active_users},
+        {'name': 'Pending', 'value': pending_users},
+        {'name': 'Suspended', 'value': suspended_users}
+    ]
+    
+    return {
+        'users': {
+            'total': total_users,
+            'active': active_users,
+            'pending': pending_users,
+            'suspended': suspended_users,
+            'by_status': users_by_status,
+            'over_time': users_timeline
+        },
+        'bookings': {
+            'total': total_bookings,
+            'confirmed': confirmed_bookings,
+            'pending': pending_bookings,
+            'rejected': rejected_bookings,
+            'cancelled': cancelled_bookings,
+            'by_status': bookings_by_status,
+            'over_time': bookings_timeline
+        }
+    }
 

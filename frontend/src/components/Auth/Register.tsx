@@ -37,7 +37,12 @@ const Register: React.FC = () => {
 
   if (success) {
     return (
-      <div className="auth-container">
+      <div 
+        className="auth-container"
+        style={{
+          backgroundImage: 'url(/images/bagroundImage.png)'
+        }}
+      >
         <div className="auth-card">
           <div className="auth-header">
             <h1 className="auth-logo">Vanatvam</h1>
@@ -55,7 +60,12 @@ const Register: React.FC = () => {
   }
 
   return (
-    <div className="auth-container">
+    <div 
+      className="auth-container"
+      style={{
+        backgroundImage: 'url(/images/bagroundImage.png)'
+      }}
+    >
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-logo">Vanatvam</h1>

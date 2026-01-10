@@ -4,25 +4,18 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
-.venv
 *.egg-info/
 dist/
 build/
 *.egg
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-build/
-dist/
-.next/
-out/
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+env.bak/
+venv.bak/
 
 # Environment variables
 .env
@@ -31,6 +24,28 @@ out/
 .env.test.local
 .env.production.local
 .env*.local
+.env.tmp
+.env.temp
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# React / Frontend Build
+frontend/build/
+frontend/dist/
+frontend/.pnp
+frontend/.pnp.js
+.next/
+out/
+storybook-static
+
+# TypeScript
+*.tsbuildinfo
 
 # IDE
 .vscode/
@@ -64,30 +79,57 @@ logs/
 *.sqlite
 *.sqlite3
 
-# Testing
+# Testing & Coverage
 .coverage
 .pytest_cache/
 htmlcov/
 .tox/
+.nox/
+coverage/
+*.cover
 .hypothesis/
+
+# Cache
+.cache/
+frontend/.cache/
+node_modules/.cache/
+.parcel-cache/
+.eslintcache
+*.cache
 
 # Temporary files
 *.tmp
 *.temp
 *.bak
 *.backup
-*.cache
 
-# React build
-frontend/build/
-frontend/.pnp
-frontend/.pnp.js
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# TypeScript
-*.tsbuildinfo
+# pyenv
+.python-version
 
-# Misc
-.cache/
-.parcel-cache/
-.eslintcache
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/

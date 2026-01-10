@@ -13,6 +13,7 @@ const OwnerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   if (user?.status === 'pending') {
     return (
@@ -57,9 +58,20 @@ const OwnerDashboard: React.FC = () => {
       </button>
       <nav className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}>
         <div className="vanatvam-header">
-          <h1 className="vanatvam-title">
-            <span className="vanatvam-text">Vanatvam</span>
-          </h1>
+          <div className="vanatvam-logo-container">
+            {!logoError ? (
+              <img 
+                src="/images/logo.png" 
+                alt="Vanatvam Logo" 
+                className="vanatvam-logo"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <h1 className="vanatvam-title">
+                <span className="vanatvam-text">Vanatvam</span>
+              </h1>
+            )}
+          </div>
         </div>
         <div className="nav-links">
           <Link 

@@ -15,6 +15,7 @@ import HolidayConfiguration from './HolidayConfiguration';
 import PeakSeasonManagement from './PeakSeasonManagement';
 import QuotaReset from './QuotaReset';
 import BookingsCalendar from './BookingsCalendar';
+import Reports from './Reports';
 import './AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
@@ -22,6 +23,7 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -56,9 +58,20 @@ const AdminDashboard: React.FC = () => {
       </button>
       <nav className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}>
         <div className="vanatvam-header">
-          <h1 className="vanatvam-title">
-            <span className="vanatvam-text">Vanatvam</span>
-          </h1>
+          <div className="vanatvam-logo-container">
+            {!logoError ? (
+              <img 
+                src="/images/logo.png" 
+                alt="Vanatvam Logo" 
+                className="vanatvam-logo"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <h1 className="vanatvam-title">
+                <span className="vanatvam-text">Vanatvam</span>
+              </h1>
+            )}
+          </div>
         </div>
         <div className="nav-links">
           <Link 
@@ -117,6 +130,13 @@ const AdminDashboard: React.FC = () => {
             <span className="nav-icon">⚙️</span>
             <span className="nav-text">Settings</span>
           </Link>
+          <Link 
+            to="/admin/reports" 
+            className={isActive('/admin/reports') ? 'active' : ''}
+          >
+            <span className="nav-icon">📊</span>
+            <span className="nav-text">Reports</span>
+          </Link>
         </div>
         <div className="user-info">
           <div className="user-details">
@@ -147,6 +167,7 @@ const AdminDashboard: React.FC = () => {
           <Route path="holidays" element={<HolidayConfiguration />} />
           <Route path="peak-seasons" element={<PeakSeasonManagement />} />
           <Route path="quota-reset" element={<QuotaReset />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="" element={<BookingsCalendar />} />
         </Routes>
       </div>
