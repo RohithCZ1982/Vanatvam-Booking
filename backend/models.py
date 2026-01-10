@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date, Enum as SQLEnum, Numeric
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date, Enum as SQLEnum, Numeric, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -34,6 +34,9 @@ class User(Base):
     weekend_quota = Column(Integer, default=6)
     weekday_balance = Column(Integer, default=0)
     weekend_balance = Column(Integer, default=0)
+    email_verified = Column(Boolean, default=False)
+    verification_token = Column(String, nullable=True)  # For email verification
+    verification_token_expires = Column(DateTime(timezone=True), nullable=True)  # Verification token expiration
     reset_token = Column(String, nullable=True)  # For password reset
     reset_token_expires = Column(DateTime(timezone=True), nullable=True)  # Token expiration
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -129,3 +132,28 @@ class QuotaTransaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     user = relationship("User")
+
+class EmailConfig(Base):
+    __tablename__ = "email_config"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    smtp_server = Column(String, nullable=False, default="smtp.gmail.com")
+    smtp_port = Column(Integer, nullable=False, default=587)
+    smtp_username = Column(String, nullable=True)
+    smtp_password = Column(String, nullable=True)  # Should be encrypted in production
+    from_email = Column(String, nullable=True)
+    frontend_url = Column(String, nullable=False, default="http://localhost:3000")
+    enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class EmailTemplate(Base):
+    __tablename__ = "email_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    template_type = Column(String, unique=True, nullable=False)  # "registration", "verification", "approval", "rejection"
+    subject = Column(String, nullable=False)
+    html_body = Column(Text, nullable=False)
+    text_body = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

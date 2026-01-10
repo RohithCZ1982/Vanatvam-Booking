@@ -7,10 +7,11 @@ import PeakSeasonManagement from './PeakSeasonManagement';
 import RejectedBookings from './RejectedBookings';
 import AuditTrail from './AuditTrail';
 import AddAdmin from './AddAdmin';
+import EmailConfiguration from './EmailConfiguration';
 import './Settings.css';
 
 const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons' | 'rejected-bookings' | 'audit-trail' | 'add-admin'>('properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'cottages' | 'quota-reset' | 'holidays' | 'peak-seasons' | 'rejected-bookings' | 'audit-trail' | 'add-admin' | 'email-config'>('properties');
 
   return (
     <div className="card">
@@ -65,6 +66,12 @@ const Settings: React.FC = () => {
         >
           👤 Add Admin
         </button>
+        <button
+          className={`tab-button ${activeTab === 'email-config' ? 'active' : ''}`}
+          onClick={() => setActiveTab('email-config')}
+        >
+          📧 Email Configuration
+        </button>
       </div>
 
       <div className="settings-content">
@@ -106,6 +113,11 @@ const Settings: React.FC = () => {
         {activeTab === 'add-admin' && (
           <div className="settings-tab-content">
             <AddAdmin />
+          </div>
+        )}
+        {activeTab === 'email-config' && (
+          <div className="settings-tab-content">
+            <EmailConfiguration />
           </div>
         )}
       </div>

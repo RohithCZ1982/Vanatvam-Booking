@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User
+from models import User, UserStatus, UserRole, EmailConfig
 from schemas import UserRegister, UserLogin, Token, UserResponse, ForgotPassword, ResetPassword
 from auth import verify_password, get_password_hash, create_access_token, get_current_user
 from datetime import timedelta, datetime
 import secrets
+from email_service import send_registration_confirmation_email, send_email_verified_notification
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -16,6 +18,10 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Generate email verification token
+    verification_token = secrets.token_urlsafe(32)
+    verification_expires = datetime.utcnow() + timedelta(hours=24)
+    
     # Create new user
     hashed_password = get_password_hash(user_data.password)
     db_user = User(
@@ -23,22 +29,95 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
         phone=user_data.phone,
         name=user_data.name,
         password_hash=hashed_password,
-        status="pending"
+        status="pending",
+        email_verified=False,
+        verification_token=verification_token,
+        verification_token_expires=verification_expires
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Send confirmation email
+    try:
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        if email_config:
+            send_registration_confirmation_email(
+                db_user.email, 
+                db_user.name, 
+                verification_token,
+                frontend_url=email_config.frontend_url,
+                smtp_server=email_config.smtp_server,
+                smtp_port=email_config.smtp_port,
+                smtp_username=email_config.smtp_username,
+                smtp_password=email_config.smtp_password,
+                from_email=email_config.from_email
+            )
+        else:
+            # Fall back to environment variables
+            send_registration_confirmation_email(db_user.email, db_user.name, verification_token)
+    except Exception as e:
+        # Log error but don't fail registration
+        print(f"Error sending confirmation email: {str(e)}")
+    
     return db_user
 
 @router.post("/login", response_model=Token)
 def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_credentials.email).first()
+    try:
+        user = db.query(User).filter(User.email == user_credentials.email).first()
+    except Exception as e:
+        # If query fails due to missing columns, provide helpful error message
+        error_msg = str(e).lower()
+        if 'email_verified' in error_msg or 'verification_token' in error_msg or 'column' in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database schema needs to be updated. Please run: cd backend && python add_email_columns.py"
+            )
+        raise
+    
     if not user or not verify_password(user_credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Admin users can always login (bypass email verification and status checks)
+    if user.role == UserRole.ADMIN:
+        # For admin users, try to set email_verified if column exists
+        try:
+            if hasattr(user, 'email_verified'):
+                if user.email_verified is None:
+                    user.email_verified = True
+                    db.commit()
+        except (AttributeError, Exception):
+            # Column might not exist yet, ignore and allow login
+            pass
+    else:
+        # For non-admin users, check email verification
+        # Handle case where email_verified column might not exist yet (backward compatibility)
+        try:
+            if hasattr(user, 'email_verified'):
+                email_verified = user.email_verified
+                if email_verified is None or email_verified is False:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Please verify your email address before logging in. Check your inbox for the confirmation link.",
+                    )
+        except HTTPException:
+            raise
+        except (AttributeError, Exception):
+            # If column doesn't exist in database, allow login for backward compatibility
+            # This should be fixed by running the migration script
+            pass
+        
+        # Check if user is active (only active users can login)
+        if user.status != UserStatus.ACTIVE:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is pending admin approval. You will receive an email notification once your account is approved.",
+            )
     
     access_token_expires = timedelta(minutes=30)
     access_token = create_access_token(
@@ -89,4 +168,45 @@ def reset_password(reset_data: ResetPassword, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Password reset successfully"}
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify email address using verification token"""
+    user = db.query(User).filter(User.verification_token == token).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    
+    if user.email_verified:
+        return {"message": "Email already verified"}
+    
+    if user.verification_token_expires and user.verification_token_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Verification token has expired. Please register again.")
+    
+    # Mark email as verified
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
+    # User status remains "pending" until admin approval
+    db.commit()
+    
+    # Send email notification that verification is complete
+    try:
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        if email_config:
+            send_email_verified_notification(
+                user.email, 
+                user.name,
+                smtp_server=email_config.smtp_server,
+                smtp_port=email_config.smtp_port,
+                smtp_username=email_config.smtp_username,
+                smtp_password=email_config.smtp_password,
+                from_email=email_config.from_email
+            )
+        else:
+            send_email_verified_notification(user.email, user.name)
+    except Exception as e:
+        print(f"Error sending verification notification email: {str(e)}")
+    
+    return {"message": "Email verified successfully. Your registration is now pending admin approval."}
 

@@ -24,9 +24,7 @@ const Register: React.FC = () => {
     try {
       await register(formData.email, formData.password, formData.name, formData.phone);
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Don't auto-redirect, let user read the message about checking email
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || err.message || 'Registration failed. Please try again.';
       setError(errorMessage);
@@ -51,7 +49,22 @@ const Register: React.FC = () => {
             <span className="success-icon">✅</span>
             <div className="success-content">
               <div className="success-title">Registration Successful!</div>
-              <div className="success-text">Your account is pending verification. Redirecting to login...</div>
+              <div className="success-text">
+                A confirmation email has been sent to <strong>{formData.email}</strong>.
+                <br /><br />
+                Please check your inbox and click the confirmation link to verify your email address.
+                <br /><br />
+                After verification, your registration will be pending admin approval.
+              </div>
+            </div>
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <button
+                onClick={() => navigate('/login')}
+                className="auth-button"
+                style={{ width: '100%', maxWidth: '200px' }}
+              >
+                Go Back to Login
+              </button>
             </div>
           </div>
         </div>

@@ -4,14 +4,17 @@ from sqlalchemy import or_
 from typing import List
 from datetime import date, datetime, timedelta
 from database import get_db
-from models import User, Property, Cottage, Booking, MaintenanceBlock, SystemCalendar, PeakSeason, QuotaTransaction, BookingStatus, UserStatus, UserRole
+from models import User, Property, Cottage, Booking, MaintenanceBlock, SystemCalendar, PeakSeason, QuotaTransaction, BookingStatus, UserStatus, UserRole, EmailConfig, EmailTemplate
 from schemas import (
     UserResponse, PropertyCreate, PropertyResponse, CottageCreate, CottageResponse,
     MaintenanceBlockCreate, MaintenanceBlockResponse, BookingResponse, MemberActivation,
     QuotaAdjustment, BookingDecision, HolidayDate, PeakSeasonCreate, QuotaTransactionResponse,
-    MemberEdit, RevokeBookingRequest, AdminCreate
+    MemberEdit, RevokeBookingRequest, AdminCreate, MemberRejection,
+    EmailConfigCreate, EmailConfigResponse, EmailTemplateCreate, EmailTemplateUpdate,
+    EmailTemplateResponse, TestEmailRequest
 )
 from auth import get_current_admin_user, get_password_hash
+from email_service import send_approval_email, send_rejection_email
 import calendar
 
 router = APIRouter()
@@ -22,7 +25,11 @@ def get_pending_members(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
-    pending_users = db.query(User).filter(User.status == UserStatus.PENDING).all()
+    # Only show users who have verified their email and are pending admin approval
+    pending_users = db.query(User).filter(
+        User.status == UserStatus.PENDING,
+        User.email_verified == True
+    ).all()
     return pending_users
 
 # ADM-02: Member Activation & Assignment
@@ -35,6 +42,16 @@ def activate_member(
     user = db.query(User).filter(User.id == activation.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.status != UserStatus.PENDING:
+        raise HTTPException(status_code=400, detail="User is not in pending status")
+    
+    if not user.email_verified:
+        raise HTTPException(status_code=400, detail="User email has not been verified yet")
+    
+    property_obj = db.query(Property).filter(Property.id == activation.property_id).first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
     
     user.status = UserStatus.ACTIVE
     user.property_id = activation.property_id
@@ -54,7 +71,76 @@ def activate_member(
     db.add(transaction)
     db.commit()
     db.refresh(user)
+    
+    # Send approval email
+    try:
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        if email_config:
+            send_approval_email(
+                user.email, 
+                user.name, 
+                property_obj.name, 
+                activation.weekday_quota, 
+                activation.weekend_quota,
+                frontend_url=email_config.frontend_url,
+                smtp_server=email_config.smtp_server,
+                smtp_port=email_config.smtp_port,
+                smtp_username=email_config.smtp_username,
+                smtp_password=email_config.smtp_password,
+                from_email=email_config.from_email
+            )
+        else:
+            send_approval_email(user.email, user.name, property_obj.name, activation.weekday_quota, activation.weekend_quota)
+    except Exception as e:
+        print(f"Error sending approval email: {str(e)}")
+    
     return user
+
+@router.post("/reject-member")
+def reject_member(
+    rejection: MemberRejection,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Reject a pending member registration"""
+    user = db.query(User).filter(User.id == rejection.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.status != UserStatus.PENDING:
+        raise HTTPException(status_code=400, detail="User is not in pending status")
+    
+    # Update user status to indicate rejection (we can use SUSPENDED or keep as PENDING but mark somehow)
+    # For now, we'll delete the user or mark them as rejected
+    # Since we don't have a rejected status, we'll delete the user record
+    user_email = user.email
+    user_name = user.name
+    rejection_reason = rejection.reason
+    
+    # Delete the user record
+    db.delete(user)
+    db.commit()
+    
+    # Send rejection email
+    try:
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        if email_config:
+            send_rejection_email(
+                user_email, 
+                user_name, 
+                rejection_reason,
+                smtp_server=email_config.smtp_server,
+                smtp_port=email_config.smtp_port,
+                smtp_username=email_config.smtp_username,
+                smtp_password=email_config.smtp_password,
+                from_email=email_config.from_email
+            )
+        else:
+            send_rejection_email(user_email, user_name, rejection_reason)
+    except Exception as e:
+        print(f"Error sending rejection email: {str(e)}")
+    
+    return {"message": "Member registration rejected and notification sent"}
 
 # ADM-03: Member Lookup & History
 @router.get("/member/{user_id}")
@@ -1309,4 +1395,235 @@ def get_reports_statistics(
             'over_time': bookings_timeline
         }
     }
+
+# Email Configuration Endpoints
+@router.get("/email-config", response_model=EmailConfigResponse)
+def get_email_config(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get email configuration (password is not returned for security)"""
+    config = db.query(EmailConfig).first()
+    if not config:
+        # Return default values if no config exists
+        return EmailConfigResponse(
+            id=None,
+            smtp_server="smtp.gmail.com",
+            smtp_port=587,
+            smtp_username="",
+            smtp_password=None,  # Don't return password
+            from_email="",
+            frontend_url="http://localhost:3000",
+            enabled=True,
+            created_at=None,
+            updated_at=None
+        )
+    # Return config without password for security
+    return EmailConfigResponse(
+        id=config.id,
+        smtp_server=config.smtp_server,
+        smtp_port=config.smtp_port,
+        smtp_username=config.smtp_username,
+        smtp_password=None,  # Don't return actual password
+        from_email=config.from_email,
+        frontend_url=config.frontend_url,
+        enabled=config.enabled,
+        created_at=config.created_at,
+        updated_at=config.updated_at
+    )
+
+@router.post("/email-config", response_model=EmailConfigResponse)
+def create_or_update_email_config(
+    config_data: EmailConfigCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Create or update email configuration"""
+    existing_config = db.query(EmailConfig).first()
+    
+    if existing_config:
+        # Update existing config
+        existing_config.smtp_server = config_data.smtp_server
+        existing_config.smtp_port = config_data.smtp_port
+        existing_config.smtp_username = config_data.smtp_username
+        # Only update password if provided (not empty/None)
+        if config_data.smtp_password is not None and config_data.smtp_password != "":
+            existing_config.smtp_password = config_data.smtp_password
+        existing_config.from_email = config_data.from_email
+        existing_config.frontend_url = config_data.frontend_url
+        existing_config.enabled = config_data.enabled
+        existing_config.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing_config)
+        # Return without password for security
+        return EmailConfigResponse(
+            id=existing_config.id,
+            smtp_server=existing_config.smtp_server,
+            smtp_port=existing_config.smtp_port,
+            smtp_username=existing_config.smtp_username,
+            smtp_password=None,
+            from_email=existing_config.from_email,
+            frontend_url=existing_config.frontend_url,
+            enabled=existing_config.enabled,
+            created_at=existing_config.created_at,
+            updated_at=existing_config.updated_at
+        )
+    else:
+        # Create new config - password is required for new config
+        if not config_data.smtp_password:
+            raise HTTPException(status_code=400, detail="SMTP password is required for new configuration")
+        new_config = EmailConfig(**config_data.dict(exclude_none=True))
+        db.add(new_config)
+        db.commit()
+        db.refresh(new_config)
+        # Return without password for security
+        return EmailConfigResponse(
+            id=new_config.id,
+            smtp_server=new_config.smtp_server,
+            smtp_port=new_config.smtp_port,
+            smtp_username=new_config.smtp_username,
+            smtp_password=None,
+            from_email=new_config.from_email,
+            frontend_url=new_config.frontend_url,
+            enabled=new_config.enabled,
+            created_at=new_config.created_at,
+            updated_at=new_config.updated_at
+        )
+
+@router.get("/email-templates", response_model=List[EmailTemplateResponse])
+def get_email_templates(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get all email templates"""
+    templates = db.query(EmailTemplate).all()
+    return templates
+
+@router.get("/email-templates/{template_type}", response_model=EmailTemplateResponse)
+def get_email_template(
+    template_type: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get specific email template"""
+    template = db.query(EmailTemplate).filter(EmailTemplate.template_type == template_type).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+@router.put("/email-templates/{template_type}", response_model=EmailTemplateResponse)
+def update_email_template(
+    template_type: str,
+    template_data: EmailTemplateUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Update or create email template (upsert)"""
+    template = db.query(EmailTemplate).filter(EmailTemplate.template_type == template_type).first()
+    
+    if not template:
+        # Create new template if it doesn't exist
+        # For PUT, require subject and html_body
+        if not template_data.subject or not template_data.html_body:
+            raise HTTPException(status_code=400, detail="Subject and HTML body are required")
+        new_template = EmailTemplate(
+            template_type=template_type,
+            subject=template_data.subject,
+            html_body=template_data.html_body,
+            text_body=template_data.text_body or None
+        )
+        db.add(new_template)
+        db.commit()
+        db.refresh(new_template)
+        return new_template
+    
+    # Update existing template - only update fields that are provided
+    if template_data.subject is not None:
+        template.subject = template_data.subject
+    if template_data.html_body is not None:
+        template.html_body = template_data.html_body
+    if template_data.text_body is not None:
+        template.text_body = template_data.text_body
+    elif template_data.text_body == "":
+        template.text_body = None
+    
+    template.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(template)
+    return template
+
+@router.post("/email-templates", response_model=EmailTemplateResponse)
+def create_email_template(
+    template_data: EmailTemplateCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Create email template"""
+    existing = db.query(EmailTemplate).filter(EmailTemplate.template_type == template_data.template_type).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Template already exists. Use PUT to update.")
+    
+    new_template = EmailTemplate(**template_data.dict())
+    db.add(new_template)
+    db.commit()
+    db.refresh(new_template)
+    return new_template
+
+@router.post("/email-config/test")
+def test_email_config(
+    test_data: TestEmailRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Send a test email to verify configuration"""
+    config = db.query(EmailConfig).first()
+    if not config:
+        raise HTTPException(status_code=400, detail="Email configuration not found. Please configure email settings first.")
+    
+    if not config.enabled:
+        raise HTTPException(status_code=400, detail="Email sending is disabled. Enable it in email configuration.")
+    
+    # Import email service functions
+    from email_service import send_email
+    
+    test_subject = "Vanatvam - Test Email"
+    test_html = """
+    <html>
+    <body>
+        <h2>Test Email from Vanatvam</h2>
+        <p>This is a test email to verify your email configuration.</p>
+        <p>If you received this email, your SMTP settings are configured correctly!</p>
+    </body>
+    </html>
+    """
+    test_text = "Test Email from Vanatvam\n\nThis is a test email to verify your email configuration.\n\nIf you received this email, your SMTP settings are configured correctly!"
+    
+    # Temporarily update email service config
+    import email_service
+    original_smtp_server = email_service.SMTP_SERVER
+    original_smtp_port = email_service.SMTP_PORT
+    original_smtp_username = email_service.SMTP_USERNAME
+    original_smtp_password = email_service.SMTP_PASSWORD
+    original_from_email = email_service.FROM_EMAIL
+    
+    try:
+        email_service.SMTP_SERVER = config.smtp_server
+        email_service.SMTP_PORT = config.smtp_port
+        email_service.SMTP_USERNAME = config.smtp_username
+        email_service.SMTP_PASSWORD = config.smtp_password
+        email_service.FROM_EMAIL = config.from_email
+        
+        success = send_email(test_data.to_email, test_subject, test_html, test_text)
+        
+        if success:
+            return {"message": "Test email sent successfully!"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send test email. Check your SMTP settings.")
+    finally:
+        # Restore original values
+        email_service.SMTP_SERVER = original_smtp_server
+        email_service.SMTP_PORT = original_smtp_port
+        email_service.SMTP_USERNAME = original_smtp_username
+        email_service.SMTP_PASSWORD = original_smtp_password
+        email_service.FROM_EMAIL = original_from_email
 

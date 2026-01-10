@@ -36,6 +36,10 @@ class MemberEdit(BaseModel):
     phone: Optional[str] = None
     password: Optional[str] = None
 
+class MemberRejection(BaseModel):
+    user_id: int
+    reason: Optional[str] = None
+
 # User Schemas
 class UserBase(BaseModel):
     email: EmailStr
@@ -190,4 +194,51 @@ class CottageAvailability(BaseModel):
     cottage_id: int
     cottage_name: str
     availability: List[DateAvailability]
+
+# Email Configuration Schemas
+class EmailConfigCreate(BaseModel):
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: Optional[str] = None  # Optional - if None, don't update existing password
+    from_email: str = ""
+    frontend_url: str = "http://localhost:3000"
+    enabled: bool = True
+
+class EmailConfigResponse(BaseModel):
+    id: Optional[int] = None
+    smtp_server: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: Optional[str] = None  # Will be None/masked for security
+    from_email: str
+    frontend_url: str
+    enabled: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class EmailTemplateCreate(BaseModel):
+    template_type: str
+    subject: str
+    html_body: str
+    text_body: Optional[str] = None
+
+class EmailTemplateUpdate(BaseModel):
+    subject: Optional[str] = None
+    html_body: Optional[str] = None
+    text_body: Optional[str] = None
+
+class EmailTemplateResponse(EmailTemplateCreate):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class TestEmailRequest(BaseModel):
+    to_email: EmailStr
 
