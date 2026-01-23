@@ -1291,6 +1291,86 @@ def create_admin_user(
     
     return admin_user
 
+# Get All Admin Users
+@router.get("/admins", response_model=List[UserResponse])
+def get_all_admins(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Get all admin users"""
+    admins = db.query(User).filter(User.role == UserRole.ADMIN).order_by(User.created_at.desc()).all()
+    return admins
+
+# Deactivate Admin User
+@router.post("/deactivate-admin/{admin_id}")
+def deactivate_admin(
+    admin_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Deactivate an admin user. Cannot deactivate yourself."""
+    if admin_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    
+    admin_user = db.query(User).filter(User.id == admin_id, User.role == UserRole.ADMIN).first()
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    admin_user.status = UserStatus.SUSPENDED
+    db.commit()
+    db.refresh(admin_user)
+    return admin_user
+
+# Reactivate Admin User
+@router.post("/reactivate-admin/{admin_id}")
+def reactivate_admin(
+    admin_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Reactivate a suspended admin user"""
+    admin_user = db.query(User).filter(User.id == admin_id, User.role == UserRole.ADMIN).first()
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    if admin_user.status != UserStatus.SUSPENDED:
+        raise HTTPException(status_code=400, detail="Admin user is not suspended")
+    
+    admin_user.status = UserStatus.ACTIVE
+    db.commit()
+    db.refresh(admin_user)
+    return admin_user
+
+# Delete Admin User
+@router.delete("/admin/{admin_id}")
+def delete_admin(
+    admin_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Delete an admin user. Cannot delete yourself."""
+    if admin_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    admin_user = db.query(User).filter(User.id == admin_id, User.role == UserRole.ADMIN).first()
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    
+    admin_name = admin_user.name
+    
+    # Delete related records in correct order (respecting foreign key constraints)
+    # 1. Delete quota transactions (references user_id)
+    db.query(QuotaTransaction).filter(QuotaTransaction.user_id == admin_id).delete()
+    
+    # 2. Delete bookings (references user_id)
+    db.query(Booking).filter(Booking.user_id == admin_id).delete()
+    
+    # 3. Delete the admin user
+    db.delete(admin_user)
+    db.commit()
+    
+    return {"message": f"Admin {admin_name} and all related records deleted successfully"}
+
 # Reports and Statistics
 @router.get("/reports/statistics")
 def get_reports_statistics(
@@ -1626,4 +1706,3 @@ def test_email_config(
         email_service.SMTP_USERNAME = original_smtp_username
         email_service.SMTP_PASSWORD = original_smtp_password
         email_service.FROM_EMAIL = original_from_email
-

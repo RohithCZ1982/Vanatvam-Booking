@@ -241,4 +241,3 @@ class EmailTemplateResponse(EmailTemplateCreate):
 
 class TestEmailRequest(BaseModel):
     to_email: EmailStr
-

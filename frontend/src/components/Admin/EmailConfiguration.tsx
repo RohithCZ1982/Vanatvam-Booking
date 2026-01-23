@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import './Settings.css';
 
 interface EmailConfig {
   id?: number;
@@ -218,18 +219,16 @@ const EmailConfiguration: React.FC = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', borderBottom: '2px solid #e0e0e0' }}>
+      <div className="settings-tabs" style={{ marginBottom: '20px' }}>
         <button
           className={`tab-button ${activeSection === 'config' ? 'active' : ''}`}
           onClick={() => setActiveSection('config')}
-          style={{ borderBottom: '3px solid transparent', padding: '10px 20px' }}
         >
           📧 SMTP Configuration
         </button>
         <button
           className={`tab-button ${activeSection === 'templates' ? 'active' : ''}`}
           onClick={() => setActiveSection('templates')}
-          style={{ borderBottom: '3px solid transparent', padding: '10px 20px' }}
         >
           ✉️ Email Templates
         </button>
