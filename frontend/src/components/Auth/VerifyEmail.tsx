@@ -17,25 +17,76 @@ const VerifyEmail: React.FC = () => {
       return;
     }
 
-    verifyEmail();
+    // Add a small delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      verifyEmail();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [token]);
 
   const verifyEmail = async () => {
-    try {
-      const response = await api.get(`/api/auth/verify-email?token=${token}`);
-      setStatus('success');
-      setMessage(response.data.message || 'Email verified successfully!');
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (error: any) {
+    if (!token) {
       setStatus('error');
-      setMessage(
-        error.response?.data?.detail || 
-        'Email verification failed. The link may have expired or is invalid.'
-      );
+      setMessage('Invalid verification link. No token provided.');
+      return;
+    }
+
+    try {
+      // Don't double-encode - FastAPI will handle URL decoding
+      // Just use the token as-is from the URL params
+      console.log('=== Email Verification ===');
+      console.log('Token from URL:', token);
+      console.log('Token length:', token.length);
+      
+      const response = await api.get(`/api/auth/verify-email`, {
+        params: { token: token }
+      });
+      
+      console.log('Verification response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
+      // Check if response is successful (status 200-299)
+      if (response.status >= 200 && response.status < 300) {
+        console.log('✓ Verification successful!');
+        setStatus('success');
+        setMessage(response.data?.message || 'Email verified successfully!');
+        
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        console.log('✗ Verification failed - unexpected status');
+        setStatus('error');
+        setMessage(response.data?.detail || 'Email verification failed.');
+      }
+    } catch (error: any) {
+      console.error('=== Verification Error ===');
+      console.error('Error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error message:', error.message);
+      
+      // Check if it's actually a success but axios is treating it as an error
+      if (error.response?.status === 200 || error.response?.status === 201) {
+        console.log('✓ Status 200/201 in error - treating as success');
+        setStatus('success');
+        setMessage(error.response?.data?.message || 'Email verified successfully!');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        console.log('✗ Verification failed');
+        setStatus('error');
+        const errorMessage = error.response?.data?.detail || 
+          error.response?.data?.message ||
+          error.message ||
+          'Email verification failed. The link may have expired or is invalid.';
+        setMessage(errorMessage);
+      }
     }
   };
 

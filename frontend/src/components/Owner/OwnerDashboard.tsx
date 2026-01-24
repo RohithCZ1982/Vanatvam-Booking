@@ -56,7 +56,12 @@ const OwnerDashboard: React.FC = () => {
         <span></span>
         <span></span>
       </button>
-      <nav className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}>
+      <nav 
+        className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}
+        style={{
+          backgroundImage: 'url(/images/bagroundImage.png)'
+        }}
+      >
         <div className="vanatvam-header">
           <div className="vanatvam-logo-container">
             {!logoError ? (

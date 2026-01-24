@@ -9,7 +9,7 @@ from models import (
     BookingStatus, UserStatus, QuotaTransaction
 )
 from schemas import (
-    UserResponse, BookingCreate, BookingResponse, CottageResponse,
+    UserResponse, BookingCreate, BookingUpdate, BookingResponse, CottageResponse,
     QuotaTransactionResponse, DateAvailability, CottageAvailability
 )
 from auth import get_current_active_user
@@ -424,3 +424,176 @@ def get_booking_receipt(
         "guest_rules": "Standard property rules apply. Please maintain cleanliness and respect quiet hours."
     }
 
+# OWN-14: Update Booking (only for pending bookings)
+@router.put("/bookings/{booking_id}", response_model=BookingResponse)
+def update_booking(
+    booking_id: int,
+    booking_update: BookingUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    booking = db.query(Booking).filter(
+        Booking.id == booking_id,
+        Booking.user_id == current_user.id
+    ).first()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if booking.status != BookingStatus.PENDING:
+        raise HTTPException(
+            status_code=400, 
+            detail="Only pending bookings can be edited. Please cancel and create a new booking."
+        )
+    
+    # Determine what to update
+    new_cottage_id = booking_update.cottage_id if booking_update.cottage_id is not None else booking.cottage_id
+    new_check_in = booking_update.check_in if booking_update.check_in is not None else booking.check_in
+    new_check_out = booking_update.check_out if booking_update.check_out is not None else booking.check_out
+    
+    # Refund old credits
+    current_user.weekday_balance += booking.weekday_credits_used
+    current_user.weekend_balance += booking.weekend_credits_used
+    
+    # Check if dates changed
+    dates_changed = (new_check_in != booking.check_in or new_check_out != booking.check_out)
+    cottage_changed = (new_cottage_id != booking.cottage_id)
+    
+    if dates_changed or cottage_changed:
+        # Check availability for new dates/cottage
+        cottage = db.query(Cottage).filter(Cottage.id == new_cottage_id).first()
+        if not cottage:
+            raise HTTPException(status_code=404, detail="Cottage not found")
+        
+        if cottage.property_id != current_user.property_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Check availability
+        current = new_check_in
+        while current < new_check_out:
+            # Check for existing bookings (excluding current booking)
+            existing_booking = db.query(Booking).filter(
+                Booking.cottage_id == new_cottage_id,
+                Booking.check_in <= current,
+                Booking.check_out > current,
+                Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+                Booking.id != booking_id
+            ).first()
+            
+            if existing_booking:
+                raise HTTPException(status_code=400, detail=f"Date {current} is already booked")
+            
+            # Check for maintenance
+            maintenance = db.query(MaintenanceBlock).filter(
+                MaintenanceBlock.cottage_id == new_cottage_id,
+                MaintenanceBlock.start_date <= current,
+                MaintenanceBlock.end_date >= current
+            ).first()
+            
+            if maintenance:
+                raise HTTPException(status_code=400, detail=f"Date {current} is under maintenance")
+            
+            current += timedelta(days=1)
+        
+        # Calculate new cost
+        cost_result = calculate_cost(
+            booking_data=BookingCreate(
+                cottage_id=new_cottage_id,
+                check_in=new_check_in,
+                check_out=new_check_out
+            ),
+            current_user=current_user,
+            db=db
+        )
+        
+        # Check if user has enough credits (including the refunded ones)
+        pending_bookings = db.query(Booking).filter(
+            Booking.user_id == current_user.id,
+            Booking.status == BookingStatus.PENDING,
+            Booking.id != booking_id
+        ).all()
+        
+        pending_weekday = sum(b.weekday_credits_used for b in pending_bookings)
+        pending_weekend = sum(b.weekend_credits_used for b in pending_bookings)
+        
+        available_weekday = current_user.weekday_balance - pending_weekday
+        available_weekend = current_user.weekend_balance - pending_weekend
+        
+        if cost_result["weekday_credits"] > available_weekday:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient weekday credits. Required: {cost_result['weekday_credits']}, Available: {available_weekday}"
+            )
+        
+        if cost_result["weekend_credits"] > available_weekend:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient weekend credits. Required: {cost_result['weekend_credits']}, Available: {available_weekend}"
+            )
+        
+        # Update booking
+        booking.cottage_id = new_cottage_id
+        booking.check_in = new_check_in
+        booking.check_out = new_check_out
+        booking.weekday_credits_used = cost_result["weekday_credits"]
+        booking.weekend_credits_used = cost_result["weekend_credits"]
+        
+        # Deduct new credits
+        current_user.weekday_balance -= cost_result["weekday_credits"]
+        current_user.weekend_balance -= cost_result["weekend_credits"]
+        
+        # Update transaction
+        transaction = db.query(QuotaTransaction).filter(
+            QuotaTransaction.booking_id == booking_id
+        ).first()
+        
+        if transaction:
+            transaction.weekday_change = -cost_result["weekday_credits"]
+            transaction.weekend_change = -cost_result["weekend_credits"]
+            transaction.description = f"Booking updated for {cottage.cottage_id}"
+    
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+# OWN-15: Delete Booking (for pending and confirmed bookings)
+@router.delete("/bookings/{booking_id}")
+def delete_booking(
+    booking_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    booking = db.query(Booking).filter(
+        Booking.id == booking_id,
+        Booking.user_id == current_user.id
+    ).first()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if booking.status not in [BookingStatus.PENDING, BookingStatus.CONFIRMED]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Only pending or confirmed bookings can be deleted"
+        )
+    
+    # Refund credits
+    current_user.weekday_balance += booking.weekday_credits_used
+    current_user.weekend_balance += booking.weekend_credits_used
+    
+    # Create refund transaction
+    transaction = QuotaTransaction(
+        user_id=current_user.id,
+        transaction_type="refund",
+        weekday_change=booking.weekday_credits_used,
+        weekend_change=booking.weekend_credits_used,
+        booking_id=booking.id,
+        description="Booking deleted by user - quota refunded"
+    )
+    db.add(transaction)
+    
+    # Delete booking
+    db.delete(booking)
+    db.commit()
+    
+    return {"message": "Booking deleted successfully"}

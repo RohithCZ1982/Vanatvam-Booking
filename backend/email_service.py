@@ -90,8 +90,11 @@ def send_registration_confirmation_email(
     **email_kwargs
 ) -> bool:
     """Send email confirmation link after registration"""
+    from urllib.parse import quote
     frontend = frontend_url or FRONTEND_URL
-    verification_url = f"{frontend}/verify-email?token={verification_token}"
+    # Properly URL encode the token
+    encoded_token = quote(verification_token, safe='')
+    verification_url = f"{frontend}/verify-email?token={encoded_token}"
     
     subject = "Welcome to Vanatvam - Please Confirm Your Email"
     
@@ -150,7 +153,7 @@ def send_registration_confirmation_email(
     © 2024 Vanatvam. All rights reserved.
     """
     
-    return send_email(email, subject, html_content, text_content)
+    return send_email(email, subject, html_content, text_content, **email_kwargs)
 
 def send_email_verified_notification(email: str, name: str, **email_kwargs) -> bool:
     """Send notification email after email verification"""
@@ -204,7 +207,7 @@ def send_email_verified_notification(email: str, name: str, **email_kwargs) -> b
     © 2024 Vanatvam. All rights reserved.
     """
     
-    return send_email(email, subject, html_content, text_content)
+    return send_email(email, subject, html_content, text_content, **email_kwargs)
 
 def send_approval_email(
     email: str, 

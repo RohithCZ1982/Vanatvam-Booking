@@ -276,8 +276,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, smtp_server: e.target.value })}
                   placeholder="smtp.gmail.com"
                   required
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
               </div>
 
@@ -291,8 +290,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, smtp_port: parseInt(e.target.value) })}
                   placeholder="587"
                   required
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
               </div>
 
@@ -306,8 +304,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, smtp_username: e.target.value })}
                   placeholder="your-email@gmail.com"
                   required
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
               </div>
 
@@ -321,8 +318,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, smtp_password: e.target.value })}
                   placeholder={config.id ? "Leave empty to keep current password" : "Enter app password"}
                   required={!config.id}
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
                 <small style={{ color: '#6c757d', fontSize: '12px' }}>
                   {config.id ? 'Leave empty to keep current password. ' : ''}For Gmail, use App Password (not your regular password)
@@ -339,8 +335,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, from_email: e.target.value })}
                   placeholder="noreply@vanatvam.com"
                   required
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
               </div>
 
@@ -354,8 +349,7 @@ const EmailConfiguration: React.FC = () => {
                   onChange={(e) => setConfig({ ...config, frontend_url: e.target.value })}
                   placeholder="http://localhost:3000"
                   required
-                  className="auth-input"
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
                 />
               </div>
 
@@ -476,8 +470,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ template, onS
               type="text"
               value={localTemplate.subject}
               onChange={(e) => setLocalTemplate({ ...localTemplate, subject: e.target.value })}
-              className="auth-input"
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', color: '#333', backgroundColor: '#fff' }}
             />
           </div>
 
@@ -487,8 +480,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ template, onS
               value={localTemplate.html_body}
               onChange={(e) => setLocalTemplate({ ...localTemplate, html_body: e.target.value })}
               rows={15}
-              className="auth-input"
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', fontFamily: 'monospace', fontSize: '12px' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', fontFamily: 'monospace', fontSize: '12px', color: '#333', backgroundColor: '#fff' }}
               placeholder="Enter HTML email template..."
             />
           </div>
@@ -499,8 +491,7 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ template, onS
               value={localTemplate.text_body || ''}
               onChange={(e) => setLocalTemplate({ ...localTemplate, text_body: e.target.value })}
               rows={10}
-              className="auth-input"
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', fontFamily: 'monospace', fontSize: '12px' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd', fontFamily: 'monospace', fontSize: '12px', color: '#333', backgroundColor: '#fff' }}
               placeholder="Enter plain text email template..."
             />
           </div>

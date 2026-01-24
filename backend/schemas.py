@@ -115,6 +115,11 @@ class BookingCreate(BaseModel):
     check_in: date
     check_out: date
 
+class BookingUpdate(BaseModel):
+    cottage_id: Optional[int] = None
+    check_in: Optional[date] = None
+    check_out: Optional[date] = None
+
 class BookingResponse(BaseModel):
     id: int
     user_id: int

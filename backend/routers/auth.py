@@ -172,16 +172,66 @@ def reset_password(reset_data: ResetPassword, db: Session = Depends(get_db)):
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
     """Verify email address using verification token"""
+    from urllib.parse import unquote
+    from datetime import timezone
+    
+    print(f"=== Email Verification Request ===")
+    print(f"Token received: {token}")
+    print(f"Token length: {len(token)}")
+    
+    # FastAPI automatically URL-decodes query parameters, but handle both cases
+    # Try with the token as-is first (FastAPI should have decoded it)
     user = db.query(User).filter(User.verification_token == token).first()
+    print(f"User found with original token: {user is not None}")
+    
+    # If not found, try URL decoding (in case it wasn't decoded)
+    if not user:
+        decoded_token = unquote(token)
+        print(f"Trying decoded token: {decoded_token[:30]}... (different: {decoded_token != token})")
+        if decoded_token != token:
+            user = db.query(User).filter(User.verification_token == decoded_token).first()
+            print(f"User found with decoded token: {user is not None}")
+    
+    # Also try double-decoding in case it was encoded twice
+    if not user:
+        double_decoded = unquote(unquote(token))
+        if double_decoded != token and double_decoded != decoded_token:
+            print(f"Trying double-decoded token: {double_decoded[:30]}...")
+            user = db.query(User).filter(User.verification_token == double_decoded).first()
+            print(f"User found with double-decoded token: {user is not None}")
     
     if not user:
+        # Check if there are any users with tokens at all
+        users_with_tokens = db.query(User).filter(User.verification_token.isnot(None)).all()
+        print(f"Total users with tokens in DB: {len(users_with_tokens)}")
+        if users_with_tokens:
+            sample_token = users_with_tokens[0].verification_token
+            print(f"Sample token from DB: {sample_token[:30]}... (length: {len(sample_token)})")
+            print(f"Tokens match: {token == sample_token}")
+        
+        # Log for debugging
+        print(f"Verification failed: Token not found. Token received: {token[:20]}... (length: {len(token)})")
         raise HTTPException(status_code=400, detail="Invalid or expired verification token")
     
     if user.email_verified:
-        return {"message": "Email already verified"}
+        return {
+            "message": "Email already verified",
+            "success": True,
+            "email_verified": True
+        }
     
-    if user.verification_token_expires and user.verification_token_expires < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Verification token has expired. Please register again.")
+    # Handle timezone-aware datetime comparison
+    if user.verification_token_expires:
+        expires = user.verification_token_expires
+        # Make both datetimes timezone-aware for comparison
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        
+        if expires < now:
+            print(f"Verification failed: Token expired. Expires: {expires}, Now: {now}")
+            raise HTTPException(status_code=400, detail="Verification token has expired. Please register again.")
     
     # Mark email as verified
     user.email_verified = True
@@ -189,6 +239,8 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     user.verification_token_expires = None
     # User status remains "pending" until admin approval
     db.commit()
+    
+    print(f"Email verified successfully for user: {user.email}")
     
     # Send email notification that verification is complete
     try:
@@ -208,5 +260,9 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error sending verification notification email: {str(e)}")
     
-    return {"message": "Email verified successfully. Your registration is now pending admin approval."}
+    return {
+        "message": "Email verified successfully. Your registration is now pending admin approval.",
+        "success": True,
+        "email_verified": True
+    }
 

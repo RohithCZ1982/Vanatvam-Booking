@@ -23,6 +23,18 @@ interface AvailabilityData {
   availability: DateAvailability[];
 }
 
+interface Booking {
+  id: number;
+  cottage_id: number;
+  cottage_name: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+  weekday_credits_used: number;
+  weekend_credits_used: number;
+  created_at: string;
+}
+
 const BookingCalendar: React.FC = () => {
   const { user } = useAuth();
   const [cottages, setCottages] = useState<Cottage[]>([]);
@@ -36,6 +48,14 @@ const BookingCalendar: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [quotaError, setQuotaError] = useState('');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [editingBooking, setEditingBooking] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    cottage_id: 0,
+    check_in: '',
+    check_out: ''
+  });
 
   // Get today's date in YYYY-MM-DD format for min date validation
   const getTodayDate = () => {
@@ -49,6 +69,7 @@ const BookingCalendar: React.FC = () => {
   useEffect(() => {
     fetchCottages();
     fetchQuotaStatus();
+    fetchBookings();
   }, []);
 
   useEffect(() => {
@@ -65,6 +86,74 @@ const BookingCalendar: React.FC = () => {
       setQuotaStatus(response.data);
     } catch (error) {
       console.error('Error fetching quota status:', error);
+    }
+  };
+
+  const fetchBookings = async () => {
+    try {
+      setLoadingBookings(true);
+      const response = await api.get('/api/owner/my-trips');
+      setBookings(response.data);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  const handleEditBooking = (booking: Booking) => {
+    setEditingBooking(booking.id);
+    setEditForm({
+      cottage_id: booking.cottage_id,
+      check_in: booking.check_in.split('T')[0],
+      check_out: booking.check_out.split('T')[0]
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingBooking(null);
+    setEditForm({ cottage_id: 0, check_in: '', check_out: '' });
+  };
+
+  const handleUpdateBooking = async (bookingId: number) => {
+    try {
+      setLoading(true);
+      setError('');
+      await api.put(`/api/owner/bookings/${bookingId}`, editForm);
+      setSuccess(true);
+      setEditingBooking(null);
+      fetchBookings();
+      fetchQuotaStatus();
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update booking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId: number) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const confirmMessage = booking.status === 'pending'
+      ? 'Are you sure you want to delete this pending booking? Credits will be refunded.'
+      : 'Are you sure you want to delete this confirmed booking? Credits will be refunded.';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      await api.delete(`/api/owner/bookings/${bookingId}`);
+      setSuccess(true);
+      fetchBookings();
+      fetchQuotaStatus();
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete booking');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -174,6 +263,7 @@ const BookingCalendar: React.FC = () => {
       setCostBreakdown(null);
       setQuotaError('');
       fetchQuotaStatus(); // Refresh quota after successful booking
+      fetchBookings(); // Refresh bookings list after successful booking
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Booking failed');
     } finally {
@@ -392,6 +482,243 @@ const BookingCalendar: React.FC = () => {
             </p>
           )}
         </form>
+      </div>
+
+      {/* Bookings List */}
+      <div className="card" style={{ marginTop: '30px' }}>
+        <h2>My Bookings</h2>
+        {loadingBookings ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>Loading bookings...</div>
+        ) : bookings.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
+            <p>No bookings found. Make your first booking above!</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Cottage</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Check-in</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Check-out</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Credits Used</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Booked On</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#495057' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map((booking) => {
+                  const getStatusStyle = (status: string) => {
+                    const styles: { [key: string]: { backgroundColor: string; color: string } } = {
+                      pending: { backgroundColor: '#fff3cd', color: '#856404' },
+                      confirmed: { backgroundColor: '#d4edda', color: '#155724' },
+                      rejected: { backgroundColor: '#f8d7da', color: '#721c24' },
+                      cancelled: { backgroundColor: '#e2e3e5', color: '#383d41' },
+                    };
+                    return styles[status] || { backgroundColor: '#e2e3e5', color: '#383d41' };
+                  };
+
+                  const statusStyle = getStatusStyle(booking.status);
+                  const isEditing = editingBooking === booking.id;
+                  const canEdit = booking.status === 'pending';
+                  const canDelete = booking.status === 'pending' || booking.status === 'confirmed';
+
+                  return (
+                    <React.Fragment key={booking.id}>
+                      <tr 
+                        style={{ 
+                          borderBottom: '1px solid #dee2e6',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8f9fa';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        {isEditing ? (
+                          <>
+                            <td style={{ padding: '12px' }}>
+                              <select
+                                value={editForm.cottage_id}
+                                onChange={(e) => setEditForm({ ...editForm, cottage_id: parseInt(e.target.value) })}
+                                className="input"
+                                style={{ width: '100%', padding: '6px' }}
+                              >
+                                {cottages.map((cottage) => (
+                                  <option key={cottage.id} value={cottage.id}>
+                                    {cottage.cottage_id}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <input
+                                type="date"
+                                value={editForm.check_in}
+                                onChange={(e) => setEditForm({ ...editForm, check_in: e.target.value })}
+                                className="input"
+                                style={{ width: '100%', padding: '6px' }}
+                                min={getTodayDate()}
+                              />
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <input
+                                type="date"
+                                value={editForm.check_out}
+                                onChange={(e) => setEditForm({ ...editForm, check_out: e.target.value })}
+                                className="input"
+                                style={{ width: '100%', padding: '6px' }}
+                                min={editForm.check_in || getTodayDate()}
+                              />
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span
+                                style={{
+                                  padding: '4px 12px',
+                                  borderRadius: '12px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  display: 'inline-block',
+                                  ...statusStyle
+                                }}
+                              >
+                                {booking.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', color: '#495057' }}>
+                              <div style={{ fontSize: '13px' }}>
+                                <div>Weekday: {booking.weekday_credits_used}</div>
+                                <div>Weekend: {booking.weekend_credits_used}</div>
+                                <div style={{ fontWeight: '600', marginTop: '4px', color: '#007bff' }}>
+                                  Total: {booking.weekday_credits_used + booking.weekend_credits_used}
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px', color: '#6c757d', fontSize: '13px' }}>
+                              {new Date(booking.created_at).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ display: 'flex', gap: '5px' }}>
+                                <button
+                                  onClick={() => handleUpdateBooking(booking.id)}
+                                  className="btn btn-primary"
+                                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                                  disabled={loading}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                                  disabled={loading}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td style={{ padding: '12px', color: '#495057' }}>{booking.cottage_name}</td>
+                            <td style={{ padding: '12px', color: '#495057' }}>
+                              {new Date(booking.check_in).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </td>
+                            <td style={{ padding: '12px', color: '#495057' }}>
+                              {new Date(booking.check_out).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span
+                                style={{
+                                  padding: '4px 12px',
+                                  borderRadius: '12px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  display: 'inline-block',
+                                  ...statusStyle
+                                }}
+                              >
+                                {booking.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', color: '#495057' }}>
+                              <div style={{ fontSize: '13px' }}>
+                                <div>Weekday: {booking.weekday_credits_used}</div>
+                                <div>Weekend: {booking.weekend_credits_used}</div>
+                                <div style={{ fontWeight: '600', marginTop: '4px', color: '#007bff' }}>
+                                  Total: {booking.weekday_credits_used + booking.weekend_credits_used}
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px', color: '#6c757d', fontSize: '13px' }}>
+                              {new Date(booking.created_at).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleEditBooking(booking)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                                    title="Edit booking"
+                                  >
+                                    ✏️ Edit
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDeleteBooking(booking.id)}
+                                    className="btn btn-secondary"
+                                    style={{ 
+                                      padding: '6px 12px', 
+                                      fontSize: '12px',
+                                      backgroundColor: '#dc3545',
+                                      color: 'white',
+                                      border: 'none'
+                                    }}
+                                    title="Delete booking"
+                                    disabled={loading}
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
