@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Use environment variable for API URL
+// For local development: http://localhost:8000
+// For production: Set REACT_APP_API_URL in Amplify environment variables
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const api = axios.create({

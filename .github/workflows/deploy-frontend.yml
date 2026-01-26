@@ -1,0 +1,23 @@
+name: Deploy Frontend to Amplify
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Trigger Amplify Build
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.AMPLIFY_TOKEN }}" \
+            https://${{ secrets.AMPLIFY_APP_ID }}.amplifyapp.com/api/webhooks/build
