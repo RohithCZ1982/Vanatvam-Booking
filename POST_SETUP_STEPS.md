@@ -282,6 +282,16 @@ sudo systemctl restart nginx
 ## Quick Reference Commands
 
 ```bash
+# Update code from Git (EASIEST)
+cd ~/Vanatvam-Booking/backend
+./update-code.sh
+
+# OR Manual update
+cd ~/Vanatvam-Booking
+git pull origin main
+cd backend
+./deploy.sh
+
 # View backend logs
 sudo journalctl -u vanatvam-backend -f
 
@@ -296,12 +306,9 @@ sudo systemctl restart nginx
 
 # Test API
 curl http://YOUR-EC2-IP/api/health
-
-# Update code and redeploy
-cd ~/Vanatvam-Booking/backend
-git pull
-./deploy.sh
 ```
+
+**📋 See [UPDATE_CODE_ON_EC2.md](./UPDATE_CODE_ON_EC2.md) for detailed update instructions!**
 
 ## Success Checklist
 
