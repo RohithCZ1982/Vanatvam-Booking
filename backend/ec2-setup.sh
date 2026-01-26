@@ -8,32 +8,95 @@ set -e
 
 echo "🔧 Setting up EC2 instance for Vanatvam Backend..."
 
+# Detect package manager
+echo "🔍 Detecting package manager..."
+if command -v yum &> /dev/null; then
+    PACKAGE_MANAGER="yum"
+    echo "✅ Detected: Amazon Linux (yum)"
+elif command -v apt-get &> /dev/null; then
+    PACKAGE_MANAGER="apt-get"
+    echo "✅ Detected: Ubuntu/Debian (apt-get)"
+else
+    echo "❌ Unsupported package manager. Please install packages manually."
+    exit 1
+fi
+
 # Update system
 echo "📦 Updating system packages..."
-sudo yum update -y || sudo apt-get update && sudo apt-get upgrade -y
+if [ "$PACKAGE_MANAGER" = "yum" ]; then
+    sudo yum update -y
+elif [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+    sudo apt-get update && sudo apt-get upgrade -y
+fi
 
-# Install Python 3.11
-echo "🐍 Installing Python 3.11..."
-sudo yum install python3.11 python3.11-pip git -y || \
-sudo apt-get install python3.11 python3.11-pip python3.11-venv git -y
+# Install Git first (required for cloning)
+echo "📥 Installing Git..."
+if [ "$PACKAGE_MANAGER" = "yum" ]; then
+    sudo yum install git -y
+elif [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+    sudo apt-get install git -y
+fi
+
+# Verify git installation
+if ! command -v git &> /dev/null; then
+    echo "❌ Git installation failed"
+    exit 1
+fi
+echo "✅ Git installed successfully"
+
+# Install Python
+echo "🐍 Installing Python..."
+if [ "$PACKAGE_MANAGER" = "yum" ]; then
+    # Try Python 3.11 first, fallback to python3
+    if sudo yum install python3.11 python3.11-pip -y 2>/dev/null; then
+        PYTHON_CMD="python3.11"
+    else
+        sudo yum install python3 python3-pip -y
+        PYTHON_CMD="python3"
+    fi
+elif [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+    # Try Python 3.11 first, fallback to python3
+    if sudo apt-get install python3.11 python3.11-pip python3.11-venv -y 2>/dev/null; then
+        PYTHON_CMD="python3.11"
+    else
+        sudo apt-get install python3 python3-pip python3-venv -y
+        PYTHON_CMD="python3"
+    fi
+fi
+
+# Verify Python installation
+if ! command -v $PYTHON_CMD &> /dev/null; then
+    echo "❌ Python installation failed"
+    exit 1
+fi
+echo "✅ Python installed: $($PYTHON_CMD --version)"
 
 # Install PostgreSQL (optional - if not using RDS)
 read -p "Install PostgreSQL on this instance? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🐘 Installing PostgreSQL..."
-    sudo yum install postgresql15 postgresql15-server -y || \
-    sudo apt-get install postgresql postgresql-contrib -y
-    
-    echo "🔧 Initializing PostgreSQL..."
-    sudo postgresql-setup initdb || sudo /usr/lib/postgresql/*/bin/pg_ctl initdb -D /var/lib/postgresql/data
+    if [ "$PACKAGE_MANAGER" = "yum" ]; then
+        sudo yum install postgresql15 postgresql15-server -y
+        echo "🔧 Initializing PostgreSQL..."
+        sudo postgresql-setup initdb
+    elif [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+        sudo apt-get install postgresql postgresql-contrib -y
+        echo "🔧 Initializing PostgreSQL..."
+        sudo /usr/lib/postgresql/*/bin/pg_ctl initdb -D /var/lib/postgresql/data || \
+        sudo -u postgres /usr/lib/postgresql/*/bin/initdb -D /var/lib/postgresql/data
+    fi
     sudo systemctl start postgresql
     sudo systemctl enable postgresql
 fi
 
 # Install Nginx
 echo "🌐 Installing Nginx..."
-sudo yum install nginx -y || sudo apt-get install nginx -y
+if [ "$PACKAGE_MANAGER" = "yum" ]; then
+    sudo yum install nginx -y
+elif [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+    sudo apt-get install nginx -y
+fi
 
 # Clone repository
 echo "📥 Cloning repository..."
@@ -51,7 +114,7 @@ fi
 # Setup backend
 echo "🔧 Setting up backend..."
 cd backend
-python3.11 -m venv venv
+$PYTHON_CMD -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt

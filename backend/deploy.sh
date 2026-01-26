@@ -24,10 +24,20 @@ BACKEND_DIR=$(pwd)
 
 echo -e "${YELLOW}📁 Backend directory: $BACKEND_DIR${NC}"
 
+# Detect Python command
+if command -v python3.11 &> /dev/null; then
+    PYTHON_CMD="python3.11"
+elif command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+else
+    echo -e "${YELLOW}❌ Python not found. Please install Python 3.${NC}"
+    exit 1
+fi
+
 # Activate virtual environment
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
-    python3.11 -m venv venv
+    $PYTHON_CMD -m venv venv
 fi
 
 echo -e "${YELLOW}🔌 Activating virtual environment...${NC}"

@@ -23,36 +23,110 @@ This is a condensed guide to get you deployed quickly. For detailed instructions
 
 ## Step 2: Launch EC2 Instance (5 minutes)
 
+### Option A: Create Security Group First (Recommended)
+
+1. **Create Security Group First:**
+   - AWS Console → EC2 → Security Groups → Create Security Group
+   - Name: `vanatvam-backend-sg`
+   - Description: `Security group for Vanatvam backend`
+   - VPC: Default VPC
+   - **Inbound Rules:**
+     - Type: SSH, Port: 22, Source: My IP (or 0.0.0.0/0 for testing)
+     - Type: HTTP, Port: 80, Source: 0.0.0.0/0
+     - Type: HTTPS, Port: 443, Source: 0.0.0.0/0
+     - Type: Custom TCP, Port: 8000, Source: 0.0.0.0/0
+   - Create security group
+
+2. **Launch Instance:**
+   - AWS Console → EC2 → Launch Instance
+   - Name: `vanatvam-backend`
+   - AMI: Amazon Linux 2023
+   - Instance: t2.micro (free tier)
+   - Key pair: Create new, download `.pem` file
+   - **Network settings:** Select existing security group → Choose `vanatvam-backend-sg`
+   - Launch instance
+
+### Option B: Configure During Launch
+
 1. AWS Console → EC2 → Launch Instance
 2. Settings:
    - Name: `vanatvam-backend`
    - AMI: Amazon Linux 2023
    - Instance: t2.micro (free tier)
    - Key pair: Create new, download `.pem` file
-   - Security group: Allow HTTP (80), HTTPS (443), Custom TCP (8000)
+   - **Network settings:**
+     - Click "Edit" next to Security groups
+     - Create new security group
+     - **Add rules one by one:**
+       - SSH (22) from My IP
+       - HTTP (80) from Anywhere (0.0.0.0/0)
+       - HTTPS (443) from Anywhere (0.0.0.0/0)
+       - Custom TCP (8000) from Anywhere (0.0.0.0/0)
 3. Launch instance
 4. **Save the public IP address!**
 
 ## Step 3: Setup EC2 (10 minutes)
 
+### Option A: Using Setup Script (Recommended)
+
 ```bash
-# Connect to EC2
+# 1. Connect to EC2
 chmod 400 your-key.pem
 ssh -i your-key.pem ec2-user@YOUR-EC2-IP
+# For Ubuntu, use: ssh -i your-key.pem ubuntu@YOUR-EC2-IP
 
-# Run setup script
+# 2. Clone repository (if not already done)
 cd ~
-wget https://raw.githubusercontent.com/yourusername/Vanatvam-Booking/main/backend/ec2-setup.sh
-# OR if you've cloned the repo:
+git clone https://github.com/yourusername/Vanatvam-Booking.git
 cd Vanatvam-Booking/backend
-bash ec2-setup.sh
 
-# Edit environment variables
+# 3. Run automated setup script
+bash setup-ec2.sh
+
+# 4. Edit environment variables
 nano .env
-# Add your RDS endpoint and other configs
+# Update:
+# - DATABASE_URL with your RDS endpoint
+# - SECRET_KEY (generate a random string)
+# - FRONTEND_URL (update after deploying frontend)
 
-# Deploy
+# 5. Deploy backend
 ./deploy.sh
+```
+
+### Option B: Manual Setup
+
+If you prefer manual setup or the script fails:
+
+```bash
+# Connect to EC2
+ssh -i your-key.pem ec2-user@YOUR-EC2-IP
+
+# Update system
+sudo yum update -y  # Amazon Linux
+# OR
+sudo apt-get update && sudo apt-get upgrade -y  # Ubuntu
+
+# Install dependencies
+sudo yum install python3.11 python3.11-pip git nginx -y  # Amazon Linux
+# OR
+sudo apt-get install python3.11 python3.11-pip python3.11-venv git nginx -y  # Ubuntu
+
+# Clone repository
+cd ~
+git clone https://github.com/yourusername/Vanatvam-Booking.git
+cd Vanatvam-Booking/backend
+
+# Setup Python environment
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Create .env file
+nano .env
+# Add your configuration
+
+# Follow remaining steps from AWS_DEPLOYMENT_GUIDE.md
 ```
 
 ## Step 4: Deploy Frontend to Amplify (10 minutes)

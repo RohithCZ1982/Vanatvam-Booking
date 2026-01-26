@@ -104,14 +104,25 @@ Install PostgreSQL directly on your EC2 instance (see backend deployment section
    - Download `.pem` file (keep it secure!)
 
 5. **Network Settings**
-   - Allow HTTP (port 80)
-   - Allow HTTPS (port 443)
-   - Allow Custom TCP (port 8000) - for FastAPI
+   - Click "Edit" to configure security group
+   - **Option 1: Create new security group**
+     - Add inbound rules:
+       - SSH (22) from My IP (recommended) or 0.0.0.0/0
+       - HTTP (80) from Anywhere (0.0.0.0/0, ::/0)
+       - HTTPS (443) from Anywhere (0.0.0.0/0, ::/0)
+       - Custom TCP (8000) from Anywhere (0.0.0.0/0, ::/0)
+   - **Option 2: Select existing security group** (if created separately)
+     - Choose your security group
 
 6. **Storage**
    - 8 GB gp3 (free tier)
 
 7. **Launch Instance**
+
+**Note:** If you get an error about security group rules:
+- Try creating the security group separately first (see troubleshooting section)
+- Make sure you're adding rules one at a time
+- Ensure IPv4 and IPv6 addresses are properly configured
 
 ### Step 2: Connect to EC2 Instance
 
@@ -132,10 +143,22 @@ sudo yum update -y  # For Amazon Linux
 # OR
 sudo apt-get update && sudo apt-get upgrade -y  # For Ubuntu
 
-# Install Python 3.11 and pip
-sudo yum install python3.11 python3.11-pip git -y  # Amazon Linux
+# Install Git first (required for cloning repository)
+sudo yum install git -y  # Amazon Linux
 # OR
-sudo apt-get install python3.11 python3.11-pip python3.11-venv git -y  # Ubuntu
+sudo apt-get install git -y  # Ubuntu
+
+# Verify git is installed
+git --version
+
+# Install Python 3.11 and pip
+sudo yum install python3.11 python3.11-pip -y  # Amazon Linux
+# OR (if python3.11 not available, use python3)
+sudo yum install python3 python3-pip -y  # Amazon Linux fallback
+# OR
+sudo apt-get install python3.11 python3.11-pip python3.11-venv -y  # Ubuntu
+# OR (if python3.11 not available)
+sudo apt-get install python3 python3-pip python3-venv -y  # Ubuntu fallback
 
 # Install PostgreSQL (if using on EC2)
 sudo yum install postgresql15 postgresql15-server -y  # Amazon Linux
@@ -450,21 +473,88 @@ FRONTEND_URL=https://your-amplify-url.amplifyapp.com
 
 ## Troubleshooting
 
+### Security Group Creation Issues
+
+**Problem: Can't add multiple rules during instance launch**
+
+**Solution 1: Create Security Group Separately**
+1. Go to EC2 → Security Groups → Create Security Group
+2. Name: `vanatvam-backend-sg`
+3. Add inbound rules:
+   - SSH (22) from My IP
+   - HTTP (80) from Anywhere (0.0.0.0/0)
+   - HTTPS (443) from Anywhere (0.0.0.0/0)
+   - Custom TCP (8000) from Anywhere (0.0.0.0/0)
+4. Create the security group
+5. When launching instance, select this existing security group
+
+**Solution 2: Add Rules After Launch**
+1. Launch instance with default security group (SSH only)
+2. Go to EC2 → Instances → Select your instance
+3. Security tab → Click security group
+4. Inbound rules → Edit inbound rules
+5. Add rules one by one:
+   - Add rule → HTTP → 0.0.0.0/0
+   - Add rule → HTTPS → 0.0.0.0/0
+   - Add rule → Custom TCP → Port 8000 → 0.0.0.0/0
+6. Save rules
+
+**Solution 3: Use AWS CLI**
+```bash
+# Create security group
+aws ec2 create-security-group \
+  --group-name vanatvam-backend-sg \
+  --description "Vanatvam backend security group"
+
+# Get security group ID from output, then:
+SG_ID="sg-xxxxxxxxx"
+
+# Add rules
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 22 \
+  --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 443 \
+  --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp \
+  --port 8000 \
+  --cidr 0.0.0.0/0
+```
+
 ### Backend not accessible
-- Check security group rules
+- Check security group rules (see above)
 - Check Nginx status: `sudo systemctl status nginx`
 - Check backend service: `sudo systemctl status vanatvam-backend`
 - Check logs: `sudo journalctl -u vanatvam-backend -f`
+- Verify instance has public IP
+- Test locally on EC2: `curl http://localhost:8000/api/health`
 
 ### Database connection issues
 - Verify security group allows EC2 → RDS
+  - RDS security group should allow inbound PostgreSQL (5432) from EC2 security group
 - Check database endpoint
 - Verify credentials in `.env`
+- Test connection: `psql -h your-rds-endpoint -U postgres -d postgres`
 
 ### Frontend API errors
 - Verify `REACT_APP_API_URL` in Amplify
 - Check CORS settings in backend
 - Verify backend is accessible
+- Check browser console for CORS errors
 
 ---
 
