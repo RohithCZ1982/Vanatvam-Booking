@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
   return (
     <div>
       <div className="card">
-        <h2>Welcome, {dashboardData.user.name}! 👋</h2>
+        <h2>Welcome, {dashboardData.user?.name}! 👋</h2>
         <p style={{ fontSize: '16px', color: '#6c757d', marginTop: '10px' }}>
           <strong>Sanctuary:</strong> {dashboardData.property?.name}
         </p>
