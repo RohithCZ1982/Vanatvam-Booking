@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
@@ -36,7 +36,7 @@ interface Booking {
 }
 
 const BookingCalendar: React.FC = () => {
-  const { user } = useAuth();
+  useAuth();
   const [cottages, setCottages] = useState<Cottage[]>([]);
   const [selectedCottage, setSelectedCottage] = useState<number | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData | null>(null);
@@ -66,30 +66,16 @@ const BookingCalendar: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  useEffect(() => {
-    fetchCottages();
-    fetchQuotaStatus();
-    fetchBookings();
-  }, []);
-
-  useEffect(() => {
-    if (costBreakdown && quotaStatus) {
-      validateQuota();
-    } else {
-      setQuotaError('');
-    }
-  }, [costBreakdown, quotaStatus]);
-
-  const fetchQuotaStatus = async () => {
+  const fetchQuotaStatus = useCallback(async () => {
     try {
       const response = await api.get('/api/owner/quota-status');
       setQuotaStatus(response.data);
     } catch (error) {
       console.error('Error fetching quota status:', error);
     }
-  };
+  }, []);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       setLoadingBookings(true);
       const response = await api.get('/api/owner/my-trips');
@@ -99,7 +85,22 @@ const BookingCalendar: React.FC = () => {
     } finally {
       setLoadingBookings(false);
     }
-  };
+  }, []);
+
+  const fetchCottages = useCallback(async () => {
+    try {
+      const response = await api.get('/api/owner/dashboard');
+      setCottages(response.data.cottages);
+    } catch (error) {
+      console.error('Error fetching cottages:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCottages();
+    fetchQuotaStatus();
+    fetchBookings();
+  }, [fetchCottages, fetchQuotaStatus, fetchBookings]);
 
   const handleEditBooking = (booking: Booking) => {
     setEditingBooking(booking.id);
@@ -157,23 +158,9 @@ const BookingCalendar: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (selectedCottage && checkIn && checkOut) {
-      fetchAvailability();
-      calculateCost();
-    }
-  }, [selectedCottage, checkIn, checkOut]);
 
-  const fetchCottages = async () => {
-    try {
-      const response = await api.get('/api/owner/dashboard');
-      setCottages(response.data.cottages);
-    } catch (error) {
-      console.error('Error fetching cottages:', error);
-    }
-  };
 
-  const fetchAvailability = async () => {
+  const fetchAvailability = useCallback(async () => {
     if (!selectedCottage || !checkIn || !checkOut) return;
 
     try {
@@ -184,9 +171,9 @@ const BookingCalendar: React.FC = () => {
     } catch (error) {
       console.error('Error fetching availability:', error);
     }
-  };
+  }, [selectedCottage, checkIn, checkOut]);
 
-  const calculateCost = async () => {
+  const calculateCost = useCallback(async () => {
     if (!selectedCottage || !checkIn || !checkOut) return;
 
     try {
@@ -201,9 +188,9 @@ const BookingCalendar: React.FC = () => {
     } catch (error) {
       console.error('Error calculating cost:', error);
     }
-  };
+  }, [selectedCottage, checkIn, checkOut, fetchQuotaStatus]);
 
-  const validateQuota = () => {
+  const validateQuota = useCallback(() => {
     if (!costBreakdown || !quotaStatus) {
       setQuotaError('');
       return;
@@ -229,7 +216,22 @@ const BookingCalendar: React.FC = () => {
     }
 
     setQuotaError(errors.length > 0 ? errors.join('. ') : '');
-  };
+  }, [costBreakdown, quotaStatus]);
+
+  useEffect(() => {
+    if (costBreakdown && quotaStatus) {
+      validateQuota();
+    } else {
+      setQuotaError('');
+    }
+  }, [costBreakdown, quotaStatus, validateQuota]);
+
+  useEffect(() => {
+    if (selectedCottage && checkIn && checkOut) {
+      fetchAvailability();
+      calculateCost();
+    }
+  }, [selectedCottage, checkIn, checkOut, fetchAvailability, calculateCost]);
 
   const isQuotaExceeded = () => {
     if (!costBreakdown || !quotaStatus) return false;
@@ -277,10 +279,10 @@ const BookingCalendar: React.FC = () => {
         <h2>Book a Cottage (OWN-04, OWN-05, OWN-06, OWN-07)</h2>
         {error && <div className="error">{error}</div>}
         {quotaError && (
-          <div className="error" style={{ 
-            backgroundColor: '#f8d7da', 
-            color: '#721c24', 
-            padding: '12px', 
+          <div className="error" style={{
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            padding: '12px',
             borderRadius: '4px',
             marginBottom: '15px',
             border: '1px solid #f5c6cb'
@@ -333,11 +335,11 @@ const BookingCalendar: React.FC = () => {
           </label>
 
           {costBreakdown && (
-            <div style={{ 
-              marginTop: '20px', 
+            <div style={{
+              marginTop: '20px',
               marginBottom: '20px',
-              padding: '20px', 
-              backgroundColor: '#f8f9fa', 
+              padding: '20px',
+              backgroundColor: '#f8f9fa',
               borderRadius: '8px',
               border: '1px solid #dee2e6',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
@@ -345,10 +347,10 @@ const BookingCalendar: React.FC = () => {
               <h4 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>
                 Cost Breakdown (OWN-06)
               </h4>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                gap: '15px' 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '15px'
               }}>
                 <div style={{
                   padding: '12px',
@@ -405,8 +407,8 @@ const BookingCalendar: React.FC = () => {
                   const isHolidayOrPeak = day.is_holiday || day.is_peak_season;
                   const dayDate = new Date(day.date).toISOString().split('T')[0];
                   const isSelectedDate = dayDate === checkIn || dayDate === checkOut;
-                  const isInSelectedRange = checkIn && checkOut && dayDate >= checkIn && dayDate < checkOut;
-                  
+
+
                   // Determine background color
                   let backgroundColor = '#d4edda'; // default available
                   if (day.is_booked) {
@@ -414,16 +416,16 @@ const BookingCalendar: React.FC = () => {
                   } else if (day.is_maintenance) {
                     backgroundColor = '#fff3cd';
                   }
-                  
+
                   // Highlight holiday/peak season dates with yellow background
                   if (isHolidayOrPeak) {
                     backgroundColor = '#fff9c4'; // Light yellow
                   }
-                  
+
                   // Highlight selected dates with stronger border
                   const borderColor = isSelectedDate ? '#ffc107' : isHolidayOrPeak ? '#ffd700' : '#ddd';
                   const borderWidth = isSelectedDate ? '3px' : isHolidayOrPeak ? '2px' : '1px';
-                  
+
                   return (
                     <div
                       key={day.date}
@@ -442,12 +444,12 @@ const BookingCalendar: React.FC = () => {
                         day.is_holiday
                           ? 'Holiday (Weekend pricing)'
                           : day.is_peak_season
-                          ? 'Peak Season (Weekend pricing)'
-                          : day.is_maintenance
-                          ? 'Maintenance'
-                          : day.is_booked
-                          ? 'Booked'
-                          : 'Available'
+                            ? 'Peak Season (Weekend pricing)'
+                            : day.is_maintenance
+                              ? 'Maintenance'
+                              : day.is_booked
+                                ? 'Booked'
+                                : 'Available'
                       }
                     >
                       {new Date(day.date).getDate()}
@@ -462,9 +464,9 @@ const BookingCalendar: React.FC = () => {
             </div>
           )}
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             disabled={loading || !costBreakdown || isQuotaExceeded()}
             style={{ marginTop: '20px' }}
             title={isQuotaExceeded() ? quotaError : loading ? 'Submitting...' : 'Submit Booking Request'}
@@ -472,9 +474,9 @@ const BookingCalendar: React.FC = () => {
             {loading ? 'Submitting...' : 'Submit Booking Request'}
           </button>
           {isQuotaExceeded() && (
-            <p style={{ 
-              fontSize: '12px', 
-              color: '#dc3545', 
+            <p style={{
+              fontSize: '12px',
+              color: '#dc3545',
               marginTop: '8px',
               fontStyle: 'italic'
             }}>
@@ -526,8 +528,8 @@ const BookingCalendar: React.FC = () => {
 
                   return (
                     <React.Fragment key={booking.id}>
-                      <tr 
-                        style={{ 
+                      <tr
+                        style={{
                           borderBottom: '1px solid #dee2e6',
                           transition: 'background-color 0.2s'
                         }}
@@ -599,9 +601,9 @@ const BookingCalendar: React.FC = () => {
                               </div>
                             </td>
                             <td style={{ padding: '12px', color: '#6c757d', fontSize: '13px' }}>
-                              {new Date(booking.created_at).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
+                              {new Date(booking.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -632,17 +634,17 @@ const BookingCalendar: React.FC = () => {
                           <>
                             <td style={{ padding: '12px', color: '#495057' }}>{booking.cottage_name}</td>
                             <td style={{ padding: '12px', color: '#495057' }}>
-                              {new Date(booking.check_in).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
+                              {new Date(booking.check_in).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
                               })}
                             </td>
                             <td style={{ padding: '12px', color: '#495057' }}>
-                              {new Date(booking.check_out).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
+                              {new Date(booking.check_out).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
                               })}
                             </td>
                             <td style={{ padding: '12px' }}>
@@ -670,9 +672,9 @@ const BookingCalendar: React.FC = () => {
                               </div>
                             </td>
                             <td style={{ padding: '12px', color: '#6c757d', fontSize: '13px' }}>
-                              {new Date(booking.created_at).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
+                              {new Date(booking.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -694,8 +696,8 @@ const BookingCalendar: React.FC = () => {
                                   <button
                                     onClick={() => handleDeleteBooking(booking.id)}
                                     className="btn btn-secondary"
-                                    style={{ 
-                                      padding: '6px 12px', 
+                                    style={{
+                                      padding: '6px 12px',
                                       fontSize: '12px',
                                       backgroundColor: '#dc3545',
                                       color: 'white',

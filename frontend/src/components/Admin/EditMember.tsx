@@ -2,10 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
-interface Property {
-  id: number;
-  name: string;
-}
+
 
 const EditMember: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -16,39 +13,33 @@ const EditMember: React.FC = () => {
     phone: '',
     password: '',
   });
-  const [properties, setProperties] = useState<Property[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    fetchMemberDetails();
-    fetchProperties();
-  }, []);
+    const fetchMemberDetails = async () => {
+      try {
+        const response = await api.get(`/api/admin/member/${userId}`);
+        const user = response.data.user;
+        setFormData({
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          password: '', // Don't show existing password
+        });
+      } catch (error) {
+        console.error('Error fetching member details:', error);
+      }
+    };
 
-  const fetchMemberDetails = async () => {
-    try {
-      const response = await api.get(`/api/admin/member/${userId}`);
-      const user = response.data.user;
-      setFormData({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        password: '', // Don't show existing password
-      });
-    } catch (error) {
-      console.error('Error fetching member details:', error);
+    if (userId) {
+      fetchMemberDetails();
     }
-  };
+  }, [userId]);
 
-  const fetchProperties = async () => {
-    try {
-      const response = await api.get('/api/admin/properties');
-      setProperties(response.data);
-    } catch (error) {
-      console.error('Error fetching properties:', error);
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +113,9 @@ const EditMember: React.FC = () => {
           />
         </label>
         <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             disabled={loading}
             title={loading ? 'Updating...' : 'Update Member'}
             style={{ padding: '5px 10px', minWidth: 'auto' }}
