@@ -60,8 +60,7 @@ pip install -r requirements.txt
 4. Set **Start Command** to:
 
 ```bash
-
-sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
 5. Save / redeploy the service.
@@ -149,8 +148,6 @@ npm install && npm run build
 
 ```bash
 npx serve -s build -l $PORT
-
-sh -c "npx serve -s build -l ${PORT:-3000}"
 ```
 
 > Note: `serve` is a small static file server. Railway will run it on the port it provides.
