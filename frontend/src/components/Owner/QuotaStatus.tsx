@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 
-interface QuotaStatusData {
+interface QuotaStatus {
   weekday_quota: number;
   weekend_quota: number;
   weekday_balance: number;
@@ -19,7 +19,7 @@ interface QuotaStatusData {
 }
 
 const QuotaStatus: React.FC = () => {
-  const [quotaStatus, setQuotaStatus] = useState<QuotaStatusData | null>(null);
+  const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,10 +42,10 @@ const QuotaStatus: React.FC = () => {
 
   // Calculate used/booked days - only confirmed bookings
   // Used = Confirmed bookings only (not including pending)
-  const usedWeekday = quotaStatus.confirmed_weekday !== undefined
+  const usedWeekday = quotaStatus.confirmed_weekday !== undefined 
     ? quotaStatus.confirmed_weekday
     : (quotaStatus.weekday_quota - quotaStatus.weekday_balance - quotaStatus.pending_weekday);
-
+  
   const usedWeekend = quotaStatus.confirmed_weekend !== undefined
     ? quotaStatus.confirmed_weekend
     : (quotaStatus.weekend_quota - quotaStatus.weekend_balance - quotaStatus.pending_weekend);
@@ -54,14 +54,14 @@ const QuotaStatus: React.FC = () => {
     <div>
       <div className="card">
         <h2>Quota Status (OWN-08, OWN-09)</h2>
-
+        
         {/* Total Balance */}
         <div style={{ marginBottom: '30px', marginTop: '20px' }}>
           <h3 style={{ marginBottom: '15px', color: '#495057' }}>Total Balance</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px'
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '15px' 
           }}>
             <div style={{
               padding: '15px',
@@ -97,10 +97,10 @@ const QuotaStatus: React.FC = () => {
         {/* Balance Details */}
         <div style={{ marginBottom: '30px' }}>
           <h3 style={{ marginBottom: '15px', color: '#495057' }}>Balance Details</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '15px'
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: '15px' 
           }}>
             <div style={{
               padding: '15px',
@@ -162,10 +162,10 @@ const QuotaStatus: React.FC = () => {
         </div>
 
         {/* Note */}
-        <div style={{
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#e7f3ff',
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '15px', 
+          backgroundColor: '#e7f3ff', 
           borderRadius: '8px',
           border: '1px solid #b3d9ff'
         }}>

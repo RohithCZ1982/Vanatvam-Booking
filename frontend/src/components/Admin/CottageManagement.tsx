@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 
 interface Property {
@@ -28,18 +28,21 @@ const CottageManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [filterProperty, setFilterProperty] = useState('');
 
+  useEffect(() => {
+    fetchProperties();
+    fetchCottages();
+  }, []);
 
-
-  const fetchProperties = useCallback(async () => {
+  const fetchProperties = async () => {
     try {
       const response = await api.get('/api/admin/properties');
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching properties:', error);
     }
-  }, []);
+  };
 
-  const fetchCottages = useCallback(async () => {
+  const fetchCottages = async () => {
     try {
       const url = filterProperty
         ? `/api/admin/cottages?property_id=${filterProperty}`
@@ -49,16 +52,11 @@ const CottageManagement: React.FC = () => {
     } catch (error) {
       console.error('Error fetching cottages:', error);
     }
+  };
+
+  useEffect(() => {
+    fetchCottages();
   }, [filterProperty]);
-
-  useEffect(() => {
-    fetchProperties();
-    fetchCottages();
-  }, [fetchProperties, fetchCottages]);
-
-  useEffect(() => {
-    fetchCottages();
-  }, [fetchCottages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,9 +117,9 @@ const CottageManagement: React.FC = () => {
           </select>
         </label>
       </div>
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="btn btn-primary"
+      <button 
+        onClick={() => setShowForm(!showForm)} 
+        className="btn btn-primary" 
         style={{ marginBottom: '20px', padding: '5px 10px', minWidth: 'auto' }}
         title={showForm ? 'Cancel' : 'Add Cottage'}
       >
@@ -166,9 +164,9 @@ const CottageManagement: React.FC = () => {
             className="input"
             rows={3}
           />
-          <button
-            type="submit"
-            className="btn btn-primary"
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
             disabled={loading}
             title={loading ? 'Saving...' : editingId ? 'Update Cottage' : 'Create Cottage'}
             style={{ padding: '5px 10px', minWidth: 'auto' }}
@@ -200,8 +198,8 @@ const CottageManagement: React.FC = () => {
                 <td>{cottage.capacity}</td>
                 <td>{cottage.amenities}</td>
                 <td>
-                  <button
-                    onClick={() => handleEdit(cottage)}
+                  <button 
+                    onClick={() => handleEdit(cottage)} 
                     className="btn btn-secondary"
                     title="Edit Cottage"
                     style={{ padding: '5px 10px', minWidth: 'auto' }}

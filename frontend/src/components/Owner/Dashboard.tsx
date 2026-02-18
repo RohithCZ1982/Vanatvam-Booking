@@ -13,7 +13,7 @@ interface DashboardData {
 }
 
 const Dashboard: React.FC = () => {
-  useAuth();
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,14 +46,14 @@ const Dashboard: React.FC = () => {
 
       <div className="card">
         <h3 style={{ marginBottom: '20px' }}>Quota Status (OWN-08, OWN-09)</h3>
-
+        
         {/* Available Credits */}
         <div style={{ marginBottom: '30px' }}>
           <h4 style={{ marginBottom: '15px', color: '#495057' }}>Available Credits</h4>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px'
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '15px' 
           }}>
             <div style={{
               padding: '15px',
@@ -89,10 +89,10 @@ const Dashboard: React.FC = () => {
         {/* Total Balance & Pending */}
         <div>
           <h4 style={{ marginBottom: '15px', color: '#495057' }}>Balance Details</h4>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '15px'
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: '15px' 
           }}>
             <div style={{
               padding: '15px',
