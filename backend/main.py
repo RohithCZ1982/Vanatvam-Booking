@@ -11,7 +11,13 @@ app = FastAPI(title="Vanatvam API", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=[
+        "http://localhost:3000",                         # Local dev
+        "https://vanatvam-booking.web.app",              # Firebase Hosting (primary)
+        "https://vanatvam-booking.firebaseapp.com",      # Firebase Hosting (alternate)
+        "https://vanatvam-booking-app.web.app",          # Firebase Hosting (new project)
+        "https://vanatvam-booking-app.firebaseapp.com",  # Firebase Hosting (new project alt)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
