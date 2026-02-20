@@ -1,9 +1,11 @@
-# Environment variables
+# ─── Environment Variables ────────────────────────────────────
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
-# Python
+# ─── Python ───────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -12,45 +14,70 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
+.venv/
+*.egg-info/
+*.egg
 
-# Node
+# ─── Node / npm ───────────────────────────────────────────────
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnp
 .pnp.js
+package-lock.json
 
-# Build outputs
+# ─── Build Outputs ────────────────────────────────────────────
 build/
 dist/
-*.egg-info/
+.cache/
 
-# IDE
+# ─── Firebase ─────────────────────────────────────────────────
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+
+# ─── IDE / Editor ─────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.settings/
+.classpath
 
-# OS
+# ─── OS Files ─────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# AWS
+# ─── Cloud / Secrets ─────────────────────────────────────────
 .aws/
 *.pem
+*.key
+*.cert
 
-# Logs
+# ─── Logs ─────────────────────────────────────────────────────
 *.log
 logs/
 
-# Database
+# ─── Database ─────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
 
-# Temporary files
+# ─── Temporary / Misc ────────────────────────────────────────
 *.tmp
 *.temp
+*.bak
+
+# ─── Uploaded Files ───────────────────────────────────────────
+uploads/
+
+# ─── Docker ───────────────────────────────────────────────────
+*.tar
