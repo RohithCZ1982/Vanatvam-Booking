@@ -49,7 +49,10 @@ const MyTrips: React.FC = () => {
   const fetchTrips = async () => {
     try {
       const response = await api.get('/api/owner/my-trips');
-      setBookings(response.data);
+      const sortedData = response.data.sort((a: Booking, b: Booking) =>
+        new Date(a.check_in).getTime() - new Date(b.check_in).getTime()
+      );
+      setBookings(sortedData);
     } catch (error) {
       console.error('Error fetching trips:', error);
     } finally {
@@ -379,8 +382,12 @@ const MyTrips: React.FC = () => {
             border: `1px solid ${statusCfg.border}`,
             backdropFilter: 'blur(8px)',
             textTransform: 'uppercase', letterSpacing: '0.5px',
+            display: 'flex', alignItems: 'center', gap: '6px'
           }}>
-            {statusCfg.icon} {statusCfg.label}
+            <span>{booking.property_name}</span>
+            <span title={statusCfg.label} style={{ fontSize: '14px', cursor: 'help' }}>
+              {statusCfg.icon}
+            </span>
           </div>
         </div>
 
@@ -409,10 +416,7 @@ const MyTrips: React.FC = () => {
               )}
             </div>
 
-            {/* Property */}
-            <p style={{ color: '#717171', fontSize: '14px', margin: '0 0 12px' }}>
-              {booking.property_name}
-            </p>
+
 
             {/* Date range */}
             <div style={{

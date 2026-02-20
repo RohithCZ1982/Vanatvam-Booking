@@ -771,25 +771,6 @@ const Dashboard: React.FC = () => {
               >
                 🎒 My Trips
               </button>
-              <button
-                onClick={() => navigate('/owner/quota')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  background: '#fff',
-                  border: '1px solid #DDDDDD',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  color: '#222',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#222'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#DDDDDD'}
-              >
-                💰 Quota Details
-              </button>
             </div>
           </div>
         </div>
@@ -801,7 +782,7 @@ const Dashboard: React.FC = () => {
               gap: 24px !important;
             }
             div[style*="height: 420px"] {
-              height: 260px !important;
+              height: 160px !important;
             }
             div[style*="grid-template-columns: 1fr 1fr"] {
               grid-template-columns: 1fr !important;
@@ -853,12 +834,15 @@ const Dashboard: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
             <span style={{ fontSize: '28px', fontWeight: '700', color: '#222' }}>
-              {dashboardData.available_weekday}
+              {dashboardData.user.weekday_quota} <span style={{ color: '#ddd', fontWeight: '300', margin: '0 2px' }}>|</span> {dashboardData.available_weekday}
             </span>
-            <span style={{ fontSize: '13px', color: '#717171' }}>available</span>
+            <span style={{ fontSize: '13px', color: '#717171' }}>total | available</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#E53E3E', marginTop: '6px' }}>
+            📉 {dashboardData.user.weekday_quota - dashboardData.available_weekday - dashboardData.pending_weekday} used
           </div>
           {dashboardData.pending_weekday > 0 && (
-            <div style={{ fontSize: '12px', color: '#E08A00', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: '#E08A00', marginTop: '2px' }}>
               🔒 {dashboardData.pending_weekday} in escrow
             </div>
           )}
@@ -877,12 +861,15 @@ const Dashboard: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
             <span style={{ fontSize: '28px', fontWeight: '700', color: '#222' }}>
-              {dashboardData.available_weekend}
+              {dashboardData.user.weekend_quota} <span style={{ color: '#ddd', fontWeight: '300', margin: '0 2px' }}>|</span> {dashboardData.available_weekend}
             </span>
-            <span style={{ fontSize: '13px', color: '#717171' }}>available</span>
+            <span style={{ fontSize: '13px', color: '#717171' }}>total | available</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#E53E3E', marginTop: '6px' }}>
+            📉 {dashboardData.user.weekend_quota - dashboardData.available_weekend - dashboardData.pending_weekend} used
           </div>
           {dashboardData.pending_weekend > 0 && (
-            <div style={{ fontSize: '12px', color: '#E08A00', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: '#E08A00', marginTop: '2px' }}>
               🔒 {dashboardData.pending_weekend} in escrow
             </div>
           )}
@@ -1042,22 +1029,6 @@ const Dashboard: React.FC = () => {
                   }}>
                     👥 {cottage.capacity}
                   </div>
-
-                  {/* Heart icon */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                    filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))',
-                  }}>
-                    🤍
-                  </div>
                 </div>
 
                 {/* Info */}
@@ -1083,9 +1054,6 @@ const Dashboard: React.FC = () => {
                     }}>
                       {cottage.cottage_id}
                     </h3>
-                    <span style={{ fontSize: '14px', color: '#222', fontWeight: '500' }}>
-                      ★ {(4 + Math.random() * 0.9).toFixed(2)}
-                    </span>
                   </div>
                   <p style={{ color: '#717171', fontSize: '14px', margin: '2px 0' }}>
                     {dashboardData.property?.name}

@@ -42,8 +42,8 @@ def get_dashboard(
         "user": current_user,
         "property": property_obj,
         "cottages": cottages,
-        "available_weekday": current_user.weekday_balance - pending_weekday,
-        "available_weekend": current_user.weekend_balance - pending_weekend,
+        "available_weekday": current_user.weekday_balance,
+        "available_weekend": current_user.weekend_balance,
         "pending_weekday": pending_weekday,
         "pending_weekend": pending_weekend
     }
@@ -294,8 +294,8 @@ def get_quota_status(
         "weekend_quota": current_user.weekend_quota,
         "weekday_balance": current_user.weekday_balance,
         "weekend_balance": current_user.weekend_balance,
-        "available_weekday": current_user.weekday_balance - pending_weekday,
-        "available_weekend": current_user.weekend_balance - pending_weekend,
+        "available_weekday": current_user.weekday_balance,
+        "available_weekend": current_user.weekend_balance,
         "pending_weekday": pending_weekday,
         "pending_weekend": pending_weekend,
         "confirmed_weekday": confirmed_weekday,

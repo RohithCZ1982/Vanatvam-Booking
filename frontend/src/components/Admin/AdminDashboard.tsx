@@ -55,7 +55,10 @@ const AdminDashboard: React.FC = () => {
         <span></span>
         <span></span>
       </button>
-      <nav 
+      {menuOpen && (
+        <div className="mobile-overlay" onClick={() => setMenuOpen(false)}></div>
+      )}
+      <nav
         className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}
         style={{
           backgroundImage: 'url(/images/bagroundImage.png)'
@@ -64,9 +67,9 @@ const AdminDashboard: React.FC = () => {
         <div className="vanatvam-header">
           <div className="vanatvam-logo-container">
             {!logoError ? (
-              <img 
-                src="/images/logo.png" 
-                alt="Vanatvam Logo" 
+              <img
+                src="/images/logo.png"
+                alt="Vanatvam Logo"
                 className="vanatvam-logo"
                 onError={() => setLogoError(true)}
               />
@@ -78,74 +81,86 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         <div className="nav-links">
-          <Link 
-            to="/admin" 
+          <Link
+            to="/admin"
             className={isActive('/admin') && location.pathname === '/admin' ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">📅</span>
             <span className="nav-text">Dashboard</span>
           </Link>
-          <Link 
-            to="/admin/member-lookup" 
+          <Link
+            to="/admin/member-lookup"
             className={isActive('/admin/member-lookup') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🔍</span>
             <span className="nav-text">Member Lookup</span>
           </Link>
-          <Link 
-            to="/admin/pending-members" 
+          <Link
+            to="/admin/pending-members"
             className={isActive('/admin/pending-members') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">📋</span>
             <span className="nav-text">Pending Members</span>
           </Link>
-          <Link 
-            to="/admin/quota-adjustment" 
+          <Link
+            to="/admin/quota-adjustment"
             className={isActive('/admin/quota-adjustment') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">💰</span>
             <span className="nav-text">Quota Adjustment</span>
           </Link>
-          <Link 
-            to="/admin/inventory-health" 
+          <Link
+            to="/admin/inventory-health"
             className={isActive('/admin/inventory-health') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🏥</span>
             <span className="nav-text">Inventory Health</span>
           </Link>
-          <Link 
-            to="/admin/approval-queue" 
+          <Link
+            to="/admin/approval-queue"
             className={isActive('/admin/approval-queue') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">✅</span>
             <span className="nav-text">Approval Queue</span>
           </Link>
-          <Link 
-            to="/admin/maintenance" 
+          <Link
+            to="/admin/maintenance"
             className={isActive('/admin/maintenance') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🔧</span>
             <span className="nav-text">Maintenance</span>
           </Link>
-          <Link 
-            to="/admin/settings" 
+          <Link
+            to="/admin/settings"
             className={isActive('/admin/settings') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">⚙️</span>
             <span className="nav-text">Settings</span>
           </Link>
         </div>
         <div className="user-info">
-          <div className="user-details">
-            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
-            <div className="user-name-text">{user?.name}</div>
-          </div>
-          <button 
-            onClick={handleLogout} 
+          <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
+          <div className="user-name-text">{user?.name}</div>
+          <button
+            onClick={handleLogout}
             className="btn-logout"
+            title="Sign Out"
           >
-            <span className="logout-icon">↪</span>
-            <span>Sign Out</span>
+            <span className="logout-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </span>
           </button>
         </div>
       </nav>

@@ -3,7 +3,6 @@ import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext';
 import Dashboard from './Dashboard';
 import MyTrips from './MyTrips';
-import QuotaStatus from './QuotaStatus';
 import TransactionHistory from './TransactionHistory';
 import './OwnerDashboard.css';
 
@@ -55,6 +54,9 @@ const OwnerDashboard: React.FC = () => {
         <span></span>
         <span></span>
       </button>
+      {menuOpen && (
+        <div className="mobile-overlay" onClick={() => setMenuOpen(false)}></div>
+      )}
       <nav
         className={`dashboard-nav ${menuOpen ? 'menu-open' : ''}`}
         style={{
@@ -82,6 +84,7 @@ const OwnerDashboard: React.FC = () => {
           <Link
             to="/owner"
             className={isActive('/owner') && location.pathname === '/owner' ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🏡</span>
             <span className="nav-text">Cottages</span>
@@ -91,6 +94,7 @@ const OwnerDashboard: React.FC = () => {
           <Link
             to="/owner/trips"
             className={isActive('/owner/trips') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🎒</span>
             <span className="nav-text">My Trips</span>
@@ -98,31 +102,29 @@ const OwnerDashboard: React.FC = () => {
 
           <div className="nav-section-label">Account</div>
           <Link
-            to="/owner/quota"
-            className={isActive('/owner/quota') ? 'active' : ''}
-          >
-            <span className="nav-icon">💳</span>
-            <span className="nav-text">Credits</span>
-          </Link>
-          <Link
             to="/owner/transactions"
             className={isActive('/owner/transactions') ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
           >
             <span className="nav-icon">🧾</span>
             <span className="nav-text">Transactions</span>
           </Link>
         </div>
         <div className="user-info">
-          <div className="user-details">
-            <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
-            <div className="user-name-text">{user?.name}</div>
-          </div>
+          <div className="user-avatar">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
+          <div className="user-name-text">{user?.name}</div>
           <button
             onClick={handleLogout}
             className="btn-logout"
+            title="Sign Out"
           >
-            <span className="logout-icon">↪</span>
-            <span>Sign Out</span>
+            <span className="logout-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </span>
           </button>
         </div>
       </nav>
@@ -130,7 +132,6 @@ const OwnerDashboard: React.FC = () => {
         <Routes>
           <Route path="" element={<Dashboard />} />
           <Route path="trips" element={<MyTrips />} />
-          <Route path="quota" element={<QuotaStatus />} />
           <Route path="transactions" element={<TransactionHistory />} />
         </Routes>
       </div>

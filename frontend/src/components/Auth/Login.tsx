@@ -22,6 +22,16 @@ const Login: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Keep error visible for 15 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -38,7 +48,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       className="auth-container"
       style={{
         backgroundImage: 'url(/images/bagroundImage.png)'
@@ -50,14 +60,14 @@ const Login: React.FC = () => {
           <h2 className="auth-subtitle">Welcome Back</h2>
           <p className="auth-description">Sign in to your account</p>
         </div>
-        
+
         {error && (
           <div className="error-message" role="alert">
             <span className="error-icon">⚠️</span>
             <span className="error-text">{error}</span>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="input-group">
             <label htmlFor="email">Email Address</label>
@@ -68,14 +78,13 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError(''); // Clear error when user types
               }}
               required
               className={`auth-input ${error ? 'input-error' : ''}`}
               disabled={loading}
             />
           </div>
-          
+
           <div className="input-group">
             <label htmlFor="password">Password</label>
             <input
@@ -85,21 +94,20 @@ const Login: React.FC = () => {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(''); // Clear error when user types
               }}
               required
               className={`auth-input ${error ? 'input-error' : ''}`}
               disabled={loading}
             />
           </div>
-          
+
           <div className="forgot-password-link">
             <a href="/forgot-password">Forgot Password?</a>
           </div>
-          
-          <button 
-            type="submit" 
-            className="auth-button" 
+
+          <button
+            type="submit"
+            className="auth-button"
             disabled={loading}
           >
             {loading ? (
@@ -112,7 +120,7 @@ const Login: React.FC = () => {
             )}
           </button>
         </form>
-        
+
         <div className="auth-footer">
           <p>
             Don't have an account? <a href="/register">Create Account</a>
