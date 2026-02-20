@@ -161,6 +161,16 @@
   margin-bottom: 20px;
 }
 
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 12px 16px 4px;
+  margin-top: 4px;
+}
+
 .nav-links a {
   color: rgba(255, 255, 255, 0.95);
   text-decoration: none;

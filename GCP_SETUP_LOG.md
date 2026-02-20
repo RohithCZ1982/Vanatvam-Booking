@@ -87,19 +87,27 @@ gcloud services enable \
   --project=vanatvam-booking-app
 ```
 
-### APIs Enabled:
-| API | Name |
-|-----|------|
-| `run.googleapis.com` | Cloud Run Admin API |
-| `sql-component.googleapis.com` | Cloud SQL |
-| `sqladmin.googleapis.com` | Cloud SQL Admin API |
-| `artifactregistry.googleapis.com` | Artifact Registry API |
-| `cloudbuild.googleapis.com` | Cloud Build API |
-| `secretmanager.googleapis.com` | Secret Manager API |
-| `firebase.googleapis.com` | Firebase Management API |
-| `firebasehosting.googleapis.com` | Firebase Hosting API |
-| `compute.googleapis.com` | Compute Engine API (auto-enabled) |
-| `cloudresourcemanager.googleapis.com` | Cloud Resource Manager API (auto-enabled) |
+### APIs Currently Active (after cleanup on 20 Feb 2026):
+| API | Name | Status |
+|-----|------|--------|
+| `run.googleapis.com` | Cloud Run Admin API | ✅ Required |
+| `artifactregistry.googleapis.com` | Artifact Registry API | ✅ Required |
+| `secretmanager.googleapis.com` | Secret Manager API | ✅ Required |
+| `firebasehosting.googleapis.com` | Firebase Hosting API | ✅ Required |
+| `firebase.googleapis.com` | Firebase Management API | ✅ Required |
+| `firebaserules.googleapis.com` | Firebase Rules API | ✅ Auto (Firebase) |
+| `cloudresourcemanager.googleapis.com` | Cloud Resource Manager API | ✅ Auto (GCP core) |
+| `iam.googleapis.com` | IAM API | ✅ Auto (GCP core) |
+| `iamcredentials.googleapis.com` | IAM Credentials API | ✅ Auto (GCP core) |
+| `logging.googleapis.com` | Cloud Logging API | ✅ Auto (Cloud Run) |
+| `monitoring.googleapis.com` | Cloud Monitoring API | ✅ Auto (Cloud Run) |
+| `cloudtrace.googleapis.com` | Cloud Trace API | ✅ Auto (Cloud Run) |
+| `storage*.googleapis.com` | Cloud Storage (3 APIs) | ✅ Auto (Cloud Build) |
+| `servicemanagement.googleapis.com` | Service Management API | ✅ Auto (GCP core) |
+| `serviceusage.googleapis.com` | Service Usage API | ✅ Auto (GCP core) |
+| `identitytoolkit.googleapis.com` | Identity Toolkit API | ✅ Auto (Firebase) |
+| `securetoken.googleapis.com` | Token Service API | ✅ Auto (Firebase) |
+| `runtimeconfig.googleapis.com` | Cloud Runtime Config API | ✅ Auto (Firebase) |
 
 ---
 
@@ -472,15 +480,52 @@ gcloud config list
 
 ---
 
-## 🌐 Live URLs
+## 🌐 Live App URLs
 
 | Service | URL |
 |---------|-----|
 | **Frontend** | https://vanatvam-booking-app.web.app |
 | **Backend API** | https://vanatvam-backend-57399834436.asia-south1.run.app |
-| **API Docs** | https://vanatvam-backend-57399834436.asia-south1.run.app/docs |
+| **API Docs (Swagger)** | https://vanatvam-backend-57399834436.asia-south1.run.app/docs |
+
+## 🖥️ GCP Console Quick Links
+
+### Project Overview
+| Page | URL |
+|------|-----|
+| **Dashboard** | https://console.cloud.google.com/home/dashboard?project=vanatvam-booking-app |
+
+### Backend (Cloud Run)
+| Page | URL |
+|------|-----|
+| **Cloud Run Services** | https://console.cloud.google.com/run?project=vanatvam-booking-app |
+| **Backend Service Details** | https://console.cloud.google.com/run/detail/asia-south1/vanatvam-backend?project=vanatvam-booking-app |
+| **Backend Logs** | https://console.cloud.google.com/run/detail/asia-south1/vanatvam-backend/logs?project=vanatvam-booking-app |
+
+### Frontend (Firebase Hosting)
+| Page | URL |
+|------|-----|
 | **Firebase Console** | https://console.firebase.google.com/project/vanatvam-booking-app/overview |
-| **GCP Console** | https://console.cloud.google.com/home/dashboard?project=vanatvam-booking-app |
+| **Firebase Hosting** | https://console.firebase.google.com/project/vanatvam-booking-app/hosting |
+
+### Secrets & Security
+| Page | URL |
+|------|-----|
+| **Secret Manager** | https://console.cloud.google.com/security/secret-manager?project=vanatvam-booking-app |
+| **IAM & Permissions** | https://console.cloud.google.com/iam-admin/iam?project=vanatvam-booking-app |
+
+### Docker Images & Builds
+| Page | URL |
+|------|-----|
+| **Artifact Registry** | https://console.cloud.google.com/artifacts?project=vanatvam-booking-app |
+| **Cloud Build History** | https://console.cloud.google.com/cloud-build/builds?project=vanatvam-booking-app |
+
+### APIs & Billing
+| Page | URL |
+|------|-----|
+| **Enabled APIs** | https://console.cloud.google.com/apis/dashboard?project=vanatvam-booking-app |
+| **API Library** | https://console.cloud.google.com/apis/library?project=vanatvam-booking-app |
+| **Billing** | https://console.cloud.google.com/billing/linkedaccount?project=vanatvam-booking-app |
 
 ## 🔑 Admin Credentials
 
@@ -517,4 +562,108 @@ gcloud config list
 
 ---
 
+## 17. API Cleanup — Disabled Unnecessary APIs (20 Feb 2026)
+
+Audited all 44 enabled APIs and disabled 21 that were unused. This reduces risk of accidental charges.
+
+```bash
+gcloud services disable \
+  sql-component.googleapis.com \
+  sqladmin.googleapis.com \
+  appengine.googleapis.com \
+  bigquery.googleapis.com \
+  bigqueryconnection.googleapis.com \
+  bigquerydatapolicy.googleapis.com \
+  bigquerydatatransfer.googleapis.com \
+  bigquerymigration.googleapis.com \
+  bigqueryreservation.googleapis.com \
+  bigquerystorage.googleapis.com \
+  containerregistry.googleapis.com \
+  datastore.googleapis.com \
+  dataplex.googleapis.com \
+  dataform.googleapis.com \
+  pubsub.googleapis.com \
+  testing.googleapis.com \
+  fcm.googleapis.com \
+  firebaseinstallations.googleapis.com \
+  firebaseremoteconfig.googleapis.com \
+  firebaseremoteconfigrealtime.googleapis.com \
+  analyticshub.googleapis.com \
+  --project=vanatvam-booking-app \
+  --force
+```
+
+**Result:** 44 APIs → 20 APIs (only essential ones remain)
+
+---
+
+## 18. Redeployment — 20 Feb 2026
+
+### Changes Deployed:
+- Airbnb-style owner dashboard with cottage image cards & inline booking
+- Redesigned Trips page with image cards, filter pills, receipt view
+- Cottage image upload/delete API endpoints
+- Booking approval/rejection email notifications to owners
+- Updated sidebar navigation (icons & labels)
+- Removed redundant "Book a Stay" page
+- Added `image_url` column to Cottage model
+- Comprehensive `.gitignore` cleanup (removed 38,437 tracked files)
+
+### Backend (Cloud Run):
+```bash
+# Build image
+gcloud builds submit \
+  --tag=asia-south1-docker.pkg.dev/vanatvam-booking-app/vanatvam-repo/backend:latest \
+  --project=vanatvam-booking-app \
+  ./backend
+# STATUS: SUCCESS (1m29s)
+
+# Deploy to Cloud Run
+gcloud run deploy vanatvam-backend \
+  --image=asia-south1-docker.pkg.dev/vanatvam-booking-app/vanatvam-repo/backend:latest \
+  --region=asia-south1 \
+  --project=vanatvam-booking-app \
+  --quiet
+# Revision: vanatvam-backend-00004-z9b (100% traffic)
+```
+
+### Frontend (Firebase Hosting):
+```bash
+cd frontend && npm run build
+# File sizes: 297.95 kB JS (+4.65 kB), 5.14 kB CSS
+
+npx -y firebase-tools deploy --only hosting --project vanatvam-booking-app
+# ✔ Deploy complete!
+# Hosting URL: https://vanatvam-booking-app.web.app
+```
+
+---
+
+## 📁 Files Created/Modified
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `backend/database.py` | Modified | Added connection pool settings for Neon |
+| `backend/main.py` | Modified | Added Firebase CORS origins, static file serving |
+| `backend/models.py` | Modified | Added `image_url` column to Cottage model |
+| `backend/schemas.py` | Modified | Added `image_url` to cottage schemas |
+| `backend/routers/admin.py` | Modified | Added cottage image upload/delete endpoints, booking email notifications |
+| `backend/routers/owner.py` | Modified | Added image/property data to my-trips API |
+| `backend/email_service.py` | Modified | Added booking approved/rejected email templates |
+| `backend/Dockerfile` | Modified | Added uploads directory creation |
+| `backend/add_cottage_image.py` | Created | DB migration script for image_url column |
+| `backend/.dockerignore` | Created | Excludes venv from Docker builds |
+| `frontend/.env.production` | Created | Production API URL (Cloud Run) |
+| `frontend/firebase.json` | Created | Firebase Hosting config (SPA rewrites, caching) |
+| `frontend/.firebaserc` | Created | Links to vanatvam-booking-app project |
+| `frontend/src/.../Dashboard.tsx` | Modified | Airbnb-style cottage grid with inline booking |
+| `frontend/src/.../MyTrips.tsx` | Modified | Airbnb-style trip cards with filters & receipt view |
+| `frontend/src/.../OwnerDashboard.tsx` | Modified | Updated nav icons/labels, removed Book a Stay |
+| `frontend/src/.../CottageManagement.tsx` | Modified | Added image upload UI for admin |
+| `cloudbuild.yaml` | Modified | Removed Cloud SQL dependency |
+| `.gitignore` | Modified | Comprehensive rules, removed 38,437 cached files |
+
+---
+
 *Setup completed on 19 February 2026*
+*Last updated on 20 February 2026*

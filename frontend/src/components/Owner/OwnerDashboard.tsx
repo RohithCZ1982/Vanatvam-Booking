@@ -78,21 +78,25 @@ const OwnerDashboard: React.FC = () => {
           </div>
         </div>
         <div className="nav-links">
+          <div className="nav-section-label">Explore</div>
           <Link
             to="/owner"
             className={isActive('/owner') && location.pathname === '/owner' ? 'active' : ''}
           >
             <span className="nav-icon">🏡</span>
-            <span className="nav-text">Explore Cottages</span>
+            <span className="nav-text">Cottages</span>
           </Link>
 
+          <div className="nav-section-label">Bookings</div>
           <Link
             to="/owner/trips"
             className={isActive('/owner/trips') ? 'active' : ''}
           >
-            <span className="nav-icon">✈️</span>
-            <span className="nav-text">Trips</span>
+            <span className="nav-icon">🎒</span>
+            <span className="nav-text">My Trips</span>
           </Link>
+
+          <div className="nav-section-label">Account</div>
           <Link
             to="/owner/quota"
             className={isActive('/owner/quota') ? 'active' : ''}

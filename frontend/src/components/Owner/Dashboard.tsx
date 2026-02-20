@@ -937,7 +937,7 @@ const Dashboard: React.FC = () => {
               onMouseEnter={e => { e.currentTarget.style.background = '#222'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#222'; }}
               onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#222'; e.currentTarget.style.borderColor = '#DDDDDD'; }}
             >
-              📜 History
+              📜 Transactions
             </button>
           </div>
         </div>
@@ -1061,7 +1061,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Info */}
-                <div style={{ padding: '0 2px' }}>
+                <div className="cottage-card-info" style={{ padding: '0 2px' }}>
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1140,7 +1140,43 @@ const Dashboard: React.FC = () => {
         }
         @media (max-width: 768px) {
           div[style*="grid-template-columns: repeat(auto-fill"] {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 14px !important;
+            padding: 0 4px !important;
+          }
+          div[style*="aspectRatio"] {
+            aspect-ratio: 3/2 !important;
+            border-radius: 10px !important;
+          }
+          div[style*="maxWidth: '1200px'"] {
+            padding: 0 12px !important;
+          }
+          .cottage-card-info h3 {
+            font-size: 13px !important;
+          }
+          .cottage-card-info p {
+            font-size: 11px !important;
+            margin: 1px 0 !important;
+          }
+          .cottage-card-info span[style*="fontSize: '14px'"] {
+            font-size: 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          div[style*="grid-template-columns: repeat(auto-fill"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+            padding: 0 2px !important;
+          }
+          div[style*="aspectRatio"] {
+            aspect-ratio: 1/1 !important;
+            border-radius: 8px !important;
+          }
+          .cottage-card-info h3 {
+            font-size: 12px !important;
+          }
+          .cottage-card-info p:nth-child(n+3) {
+            display: none !important;
           }
         }
       `}</style>
