@@ -1,10 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 from routers import auth, admin, owner
+import os
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Ensure uploads directory exists
+UPLOADS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(os.path.join(UPLOADS_DIR, "cottages"), exist_ok=True)
 
 app = FastAPI(title="Vanatvam API", version="1.0.0")
 
@@ -22,6 +28,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve uploaded files (cottage images, etc.)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

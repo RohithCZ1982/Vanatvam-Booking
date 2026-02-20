@@ -333,10 +333,17 @@ def get_my_trips(
     result = []
     for booking in bookings:
         cottage = db.query(Cottage).filter(Cottage.id == booking.cottage_id).first()
+        property_obj = None
+        if cottage and cottage.property_id:
+            property_obj = db.query(Property).filter(Property.id == cottage.property_id).first()
         result.append({
             "id": booking.id,
             "cottage_id": booking.cottage_id,
             "cottage_name": cottage.cottage_id if cottage else "Unknown",
+            "image_url": cottage.image_url if cottage else None,
+            "capacity": cottage.capacity if cottage else 0,
+            "amenities": cottage.amenities if cottage else None,
+            "property_name": property_obj.name if property_obj else "Unknown",
             "check_in": booking.check_in,
             "check_out": booking.check_out,
             "status": booking.status,

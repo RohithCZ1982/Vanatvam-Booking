@@ -83,6 +83,7 @@ class CottageBase(BaseModel):
     cottage_id: str
     capacity: int
     amenities: Optional[str] = None
+    image_url: Optional[str] = None
 
 class CottageCreate(CottageBase):
     property_id: int

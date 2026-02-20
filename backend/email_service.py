@@ -345,3 +345,212 @@ def send_rejection_email(email: str, name: str, reason: Optional[str] = None, **
     
     return send_email(email, subject, html_content, text_content, **email_kwargs)
 
+def send_booking_approved_email(
+    email: str,
+    name: str,
+    cottage_name: str,
+    property_name: str,
+    check_in: str,
+    check_out: str,
+    weekday_credits: int,
+    weekend_credits: int,
+    notes: Optional[str] = None,
+    frontend_url: Optional[str] = None,
+    **email_kwargs
+) -> bool:
+    """Send email when admin approves a booking"""
+    subject = "Vanatvam - Booking Confirmed! 🎉"
+    frontend = frontend_url or FRONTEND_URL
+
+    notes_html = f'<p><strong>Admin Notes:</strong> {notes}</p>' if notes else ''
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+            .success {{ color: #27ae60; font-weight: bold; font-size: 18px; }}
+            .booking-card {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+            .booking-card p {{ margin: 8px 0; }}
+            .booking-card .label {{ color: #666; font-size: 13px; }}
+            .booking-card .value {{ color: #222; font-weight: 600; font-size: 15px; }}
+            .credits-row {{ display: flex; gap: 20px; margin: 10px 0; }}
+            .credit-box {{ background: #f0f9f4; padding: 10px 15px; border-radius: 6px; text-align: center; flex: 1; }}
+            .credit-box .num {{ font-size: 24px; font-weight: bold; color: #27ae60; }}
+            .credit-box .lbl {{ font-size: 11px; color: #666; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎉 Booking Confirmed!</h1>
+            </div>
+            <div class="content">
+                <p>Dear {name},</p>
+                <p class="success">Your booking request has been approved!</p>
+
+                <div class="booking-card">
+                    <p><span class="label">Cottage:</span><br/><span class="value">{cottage_name}</span></p>
+                    <p><span class="label">Sanctuary:</span><br/><span class="value">{property_name}</span></p>
+                    <p><span class="label">Check-in:</span><br/><span class="value">{check_in}</span></p>
+                    <p><span class="label">Check-out:</span><br/><span class="value">{check_out}</span></p>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 15px 0;">
+                        <tr>
+                            <td style="background: #f0f9f4; padding: 10px 15px; border-radius: 6px; text-align: center; width: 33%;">
+                                <div style="font-size: 24px; font-weight: bold; color: #007bff;">{weekday_credits}</div>
+                                <div style="font-size: 11px; color: #666;">Weekday</div>
+                            </td>
+                            <td style="width: 10px;"></td>
+                            <td style="background: #f0f9f4; padding: 10px 15px; border-radius: 6px; text-align: center; width: 33%;">
+                                <div style="font-size: 24px; font-weight: bold; color: #28a745;">{weekend_credits}</div>
+                                <div style="font-size: 11px; color: #666;">Weekend</div>
+                            </td>
+                            <td style="width: 10px;"></td>
+                            <td style="background: #27ae60; padding: 10px 15px; border-radius: 6px; text-align: center; width: 33%;">
+                                <div style="font-size: 24px; font-weight: bold; color: white;">{weekday_credits + weekend_credits}</div>
+                                <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Total Credits</div>
+                            </td>
+                        </tr>
+                    </table>
+                    {notes_html}
+                </div>
+
+                <p>You can view your booking details and upcoming trips in your dashboard.</p>
+                <p style="text-align: center;">
+                    <a href="{frontend}/owner/trips" class="button">View My Trips</a>
+                </p>
+                <p>If you need to make any changes, please contact the administrator.</p>
+            </div>
+            <div class="footer">
+                <p>© 2024 Vanatvam. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+    Booking Confirmed!
+
+    Dear {name},
+
+    Your booking request has been approved!
+
+    Booking Details:
+    - Cottage: {cottage_name}
+    - Sanctuary: {property_name}
+    - Check-in: {check_in}
+    - Check-out: {check_out}
+    - Weekday Credits: {weekday_credits}
+    - Weekend Credits: {weekend_credits}
+    - Total Credits: {weekday_credits + weekend_credits}
+    {f'- Admin Notes: {notes}' if notes else ''}
+
+    You can view your booking details at: {frontend}/owner/trips
+
+    © 2024 Vanatvam. All rights reserved.
+    """
+
+    return send_email(email, subject, html_content, text_content, **email_kwargs)
+
+def send_booking_rejected_email(
+    email: str,
+    name: str,
+    cottage_name: str,
+    property_name: str,
+    check_in: str,
+    check_out: str,
+    weekday_credits: int,
+    weekend_credits: int,
+    notes: Optional[str] = None,
+    frontend_url: Optional[str] = None,
+    **email_kwargs
+) -> bool:
+    """Send email when admin rejects a booking"""
+    subject = "Vanatvam - Booking Update"
+    frontend = frontend_url or FRONTEND_URL
+
+    notes_html = f'<p><strong>Reason:</strong> {notes}</p>' if notes else ''
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+            .booking-card {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+            .booking-card p {{ margin: 8px 0; }}
+            .booking-card .label {{ color: #666; font-size: 13px; }}
+            .booking-card .value {{ color: #222; font-weight: 600; font-size: 15px; }}
+            .refund-box {{ background: #e8f5e9; padding: 12px 16px; border-radius: 6px; margin: 15px 0; border: 1px solid #c8e6c9; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Booking Update</h1>
+            </div>
+            <div class="content">
+                <p>Dear {name},</p>
+                <p>We regret to inform you that your booking request could not be approved.</p>
+
+                <div class="booking-card">
+                    <p><span class="label">Cottage:</span><br/><span class="value">{cottage_name}</span></p>
+                    <p><span class="label">Sanctuary:</span><br/><span class="value">{property_name}</span></p>
+                    <p><span class="label">Check-in:</span><br/><span class="value">{check_in}</span></p>
+                    <p><span class="label">Check-out:</span><br/><span class="value">{check_out}</span></p>
+                    {notes_html}
+                </div>
+
+                <div class="refund-box">
+                    <strong>✅ Credits Refunded:</strong> {weekday_credits} weekday + {weekend_credits} weekend = {weekday_credits + weekend_credits} total credits have been returned to your balance.
+                </div>
+
+                <p>You can submit a new booking request with different dates from your dashboard.</p>
+                <p style="text-align: center;">
+                    <a href="{frontend}/owner" class="button">Go to Dashboard</a>
+                </p>
+                <p>If you have any questions, please contact the administrator.</p>
+            </div>
+            <div class="footer">
+                <p>© 2024 Vanatvam. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+    Booking Update
+
+    Dear {name},
+
+    We regret to inform you that your booking request could not be approved.
+
+    Booking Details:
+    - Cottage: {cottage_name}
+    - Sanctuary: {property_name}
+    - Check-in: {check_in}
+    - Check-out: {check_out}
+    {f'- Reason: {notes}' if notes else ''}
+
+    Credits Refunded: {weekday_credits} weekday + {weekend_credits} weekend = {weekday_credits + weekend_credits} total credits have been returned to your balance.
+
+    You can submit a new booking request at: {frontend}/owner
+
+    © 2024 Vanatvam. All rights reserved.
+    """
+
+    return send_email(email, subject, html_content, text_content, **email_kwargs)
+

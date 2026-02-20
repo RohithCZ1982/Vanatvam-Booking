@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+import os
+import uuid
+import shutil
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List
@@ -14,7 +17,7 @@ from schemas import (
     EmailTemplateResponse, TestEmailRequest
 )
 from auth import get_current_admin_user, get_password_hash
-from email_service import send_approval_email, send_rejection_email
+from email_service import send_approval_email, send_rejection_email, send_booking_approved_email, send_booking_rejected_email
 import calendar
 
 router = APIRouter()
@@ -430,6 +433,76 @@ def update_cottage(
     db.refresh(db_cottage)
     return db_cottage
 
+# Cottage Image Upload
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "cottages")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/cottages/{cottage_id}/upload-image")
+async def upload_cottage_image(
+    cottage_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    db_cottage = db.query(Cottage).filter(Cottage.id == cottage_id).first()
+    if not db_cottage:
+        raise HTTPException(status_code=404, detail="Cottage not found")
+    
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF")
+    
+    # Validate file size (max 5MB)
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 5MB limit")
+    
+    # Delete old image if exists
+    if db_cottage.image_url:
+        old_filename = db_cottage.image_url.split("/")[-1]
+        old_path = os.path.join(UPLOAD_DIR, old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+    
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"cottage_{cottage_id}_{uuid.uuid4().hex[:8]}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(contents)
+    
+    # Update database
+    image_url = f"/uploads/cottages/{filename}"
+    db_cottage.image_url = image_url
+    db.commit()
+    db.refresh(db_cottage)
+    
+    return {"image_url": image_url, "message": "Image uploaded successfully"}
+
+@router.delete("/cottages/{cottage_id}/image")
+def delete_cottage_image(
+    cottage_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    db_cottage = db.query(Cottage).filter(Cottage.id == cottage_id).first()
+    if not db_cottage:
+        raise HTTPException(status_code=404, detail="Cottage not found")
+    
+    if db_cottage.image_url:
+        old_filename = db_cottage.image_url.split("/")[-1]
+        old_path = os.path.join(UPLOAD_DIR, old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        db_cottage.image_url = None
+        db.commit()
+        db.refresh(db_cottage)
+    
+    return {"message": "Image deleted successfully"}
+
 # ADM-08: Maintenance Blocking
 @router.post("/maintenance-blocks", response_model=MaintenanceBlockResponse)
 def create_maintenance_block(
@@ -695,6 +768,57 @@ def make_booking_decision(
     
     db.commit()
     db.refresh(booking)
+    
+    # Send email notification to the owner
+    try:
+        booking_user = db.query(User).filter(User.id == booking.user_id).first()
+        cottage = db.query(Cottage).filter(Cottage.id == booking.cottage_id).first()
+        property_obj = None
+        if cottage and cottage.property_id:
+            property_obj = db.query(Property).filter(Property.id == cottage.property_id).first()
+        
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        email_kwargs = {}
+        if email_config:
+            email_kwargs = {
+                "smtp_server": email_config.smtp_server,
+                "smtp_port": email_config.smtp_port,
+                "smtp_username": email_config.smtp_username,
+                "smtp_password": email_config.smtp_password,
+                "from_email": email_config.from_email,
+                "frontend_url": email_config.frontend_url,
+            }
+        
+        if booking_user and cottage:
+            if decision.action == "approve":
+                send_booking_approved_email(
+                    email=booking_user.email,
+                    name=booking_user.name,
+                    cottage_name=cottage.cottage_id,
+                    property_name=property_obj.name if property_obj else "Unknown",
+                    check_in=str(booking.check_in),
+                    check_out=str(booking.check_out),
+                    weekday_credits=booking.weekday_credits_used,
+                    weekend_credits=booking.weekend_credits_used,
+                    notes=decision.notes,
+                    **email_kwargs
+                )
+            elif decision.action == "reject":
+                send_booking_rejected_email(
+                    email=booking_user.email,
+                    name=booking_user.name,
+                    cottage_name=cottage.cottage_id,
+                    property_name=property_obj.name if property_obj else "Unknown",
+                    check_in=str(booking.check_in),
+                    check_out=str(booking.check_out),
+                    weekday_credits=booking.weekday_credits_used,
+                    weekend_credits=booking.weekend_credits_used,
+                    notes=decision.notes,
+                    **email_kwargs
+                )
+    except Exception as e:
+        print(f"Error sending booking decision email: {str(e)}")
+    
     return booking
 
 # ADM-12: Emergency Revocation

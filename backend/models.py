@@ -64,6 +64,7 @@ class Cottage(Base):
     cottage_id = Column(String, nullable=False)  # e.g., "C-12"
     capacity = Column(Integer, nullable=False)
     amenities = Column(String, nullable=True)  # JSON string or comma-separated
+    image_url = Column(String, nullable=True)  # URL/path to cottage image
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     property = relationship("Property", back_populates="cottages")

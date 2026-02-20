@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create uploads directory for cottage images
+RUN mkdir -p /app/uploads/cottages
+
 # Expose port
 EXPOSE 8000
 
