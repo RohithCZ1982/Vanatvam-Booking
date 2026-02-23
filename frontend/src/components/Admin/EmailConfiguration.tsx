@@ -85,21 +85,22 @@ const EmailConfiguration: React.FC = () => {
     try {
       const response = await api.get('/api/admin/email-templates');
       const fetchedTemplates = response.data || [];
-      
-      // Ensure we have all 4 template types
-      const templateTypes = ['registration', 'verification', 'approval', 'rejection'];
+
+      // Ensure we have all 5 template types
+      const templateTypes = ['registration', 'verification', 'approval', 'rejection', 'booking_approved'];
       const defaultTemplates = {
         'registration': { subject: 'Welcome to Vanatvam - Please Confirm Your Email', html_body: '', text_body: '' },
         'verification': { subject: 'Vanatvam - Email Verified Successfully', html_body: '', text_body: '' },
         'approval': { subject: 'Vanatvam - Account Approved!', html_body: '', text_body: '' },
-        'rejection': { subject: 'Vanatvam - Registration Update', html_body: '', text_body: '' }
+        'rejection': { subject: 'Vanatvam - Registration Update', html_body: '', text_body: '' },
+        'booking_approved': { subject: 'Vanatvam - Cottage Booking Confirmed!', html_body: '', text_body: '' }
       };
-      
+
       const allTemplates = templateTypes.map(type => {
         const existing = fetchedTemplates.find((t: EmailTemplate) => t.template_type === type);
         return existing || { template_type: type, ...defaultTemplates[type as keyof typeof defaultTemplates] };
       });
-      
+
       setTemplates(allTemplates);
     } catch (err: any) {
       console.error('Error fetching templates:', err);
@@ -128,6 +129,12 @@ const EmailConfiguration: React.FC = () => {
           subject: 'Vanatvam - Registration Update',
           html_body: '',
           text_body: ''
+        },
+        {
+          template_type: 'booking_approved',
+          subject: 'Vanatvam - Cottage Booking Confirmed!',
+          html_body: '',
+          text_body: ''
         }
       ]);
     }
@@ -145,7 +152,7 @@ const EmailConfiguration: React.FC = () => {
         ...config,
         smtp_password: config.id && !config.smtp_password ? null : config.smtp_password
       };
-      
+
       await api.post('/api/admin/email-config', configToSend);
       setSuccess('Email configuration saved successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -163,7 +170,7 @@ const EmailConfiguration: React.FC = () => {
       setError('Subject and HTML body are required');
       return;
     }
-    
+
     setError('');
     setSuccess('');
     setSaving(true);
@@ -175,7 +182,7 @@ const EmailConfiguration: React.FC = () => {
         html_body: template.html_body,
         ...(template.text_body && { text_body: template.text_body })
       };
-      
+
       await api.put(`/api/admin/email-templates/${template.template_type}`, payload);
       setSuccess(`${getTemplateName(template.template_type)} template updated successfully!`);
       setTimeout(() => setSuccess(''), 3000);
@@ -208,7 +215,8 @@ const EmailConfiguration: React.FC = () => {
       'registration': 'Registration Confirmation',
       'verification': 'Email Verification',
       'approval': 'Account Approval',
-      'rejection': 'Account Rejection'
+      'rejection': 'Account Rejection',
+      'booking_approved': 'Booking Approval'
     };
     return names[type] || type;
   };
@@ -235,24 +243,24 @@ const EmailConfiguration: React.FC = () => {
       </div>
 
       {error && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#f8d7da', 
-          color: '#721c24', 
-          borderRadius: '4px', 
-          marginBottom: '20px' 
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          borderRadius: '4px',
+          marginBottom: '20px'
         }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#d4edda', 
-          color: '#155724', 
-          borderRadius: '4px', 
-          marginBottom: '20px' 
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#d4edda',
+          color: '#155724',
+          borderRadius: '4px',
+          marginBottom: '20px'
         }}>
           {success}
         </div>
@@ -389,10 +397,10 @@ const EmailConfiguration: React.FC = () => {
       {activeSection === 'templates' && (
         <div>
           <h3 style={{ marginBottom: '10px' }}>Email Templates</h3>
-          <div style={{ 
-            marginBottom: '20px', 
-            padding: '15px', 
-            backgroundColor: '#e7f3ff', 
+          <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            backgroundColor: '#e7f3ff',
             borderRadius: '8px',
             border: '1px solid #b3d9ff'
           }}>
@@ -404,10 +412,13 @@ const EmailConfiguration: React.FC = () => {
               <code>{'{property_name}'}</code> - Assigned property name<br />
               <code>{'{weekday_quota}'}</code> - Weekday quota amount<br />
               <code>{'{weekend_quota}'}</code> - Weekend quota amount<br />
-              <code>{'{reason}'}</code> - Rejection reason (if applicable)
+              <code>{'{reason}'}</code> - Rejection reason (if applicable)<br />
+              <code>{'{cottage_name}'}</code> - Booked Cottage Name (Booking Only)<br />
+              <code>{'{check_in}'}</code> - Check-in Date (Booking Only)<br />
+              <code>{'{check_out}'}</code> - Check-out Date (Booking Only)
             </div>
           </div>
-          
+
           {templates.map((template) => (
             <EmailTemplateEditor
               key={template.template_type}
@@ -436,7 +447,8 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ template, onS
     'registration': 'Registration Confirmation Email',
     'verification': 'Email Verification Confirmation',
     'approval': 'Account Approval Email',
-    'rejection': 'Account Rejection Email'
+    'rejection': 'Account Rejection Email',
+    'booking_approved': 'Booking Approved Email'
   };
 
   const handleSave = () => {
@@ -444,10 +456,10 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({ template, onS
   };
 
   return (
-    <div style={{ 
-      marginBottom: '20px', 
-      border: '1px solid #e0e0e0', 
-      borderRadius: '8px', 
+    <div style={{
+      marginBottom: '20px',
+      border: '1px solid #e0e0e0',
+      borderRadius: '8px',
       padding: '20px',
       backgroundColor: '#f9f9f9'
     }}>

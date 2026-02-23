@@ -791,6 +791,12 @@ def make_booking_decision(
         
         if booking_user and cottage:
             if decision.action == "approve":
+                template = db.query(EmailTemplate).filter(EmailTemplate.template_type == "booking_approved").first()
+                if template:
+                    email_kwargs["subject_template"] = template.subject
+                    email_kwargs["html_template"] = template.html_body
+                    email_kwargs["text_template"] = template.text_body
+                    
                 send_booking_approved_email(
                     email=booking_user.email,
                     name=booking_user.name,

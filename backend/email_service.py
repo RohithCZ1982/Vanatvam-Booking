@@ -356,15 +356,32 @@ def send_booking_approved_email(
     weekend_credits: int,
     notes: Optional[str] = None,
     frontend_url: Optional[str] = None,
+    subject_template: Optional[str] = None,
+    html_template: Optional[str] = None,
+    text_template: Optional[str] = None,
     **email_kwargs
 ) -> bool:
     """Send email when admin approves a booking"""
-    subject = "Vanatvam - Booking Confirmed! 🎉"
+    subject = subject_template or "Vanatvam - Booking Confirmed! 🎉"
     frontend = frontend_url or FRONTEND_URL
 
     notes_html = f'<p><strong>Admin Notes:</strong> {notes}</p>' if notes else ''
 
-    html_content = f"""
+    if html_template:
+        html_content = html_template.format(
+            name=name,
+            email=email,
+            property_name=property_name,
+            weekday_quota=weekday_credits,
+            weekend_quota=weekend_credits,
+            cottage_name=cottage_name,
+            check_in=check_in,
+            check_out=check_out,
+            reason=notes or "N/A",
+            verification_url=""
+        )
+    else:
+        html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -435,7 +452,24 @@ def send_booking_approved_email(
     </html>
     """
 
-    text_content = f"""
+    if text_template:
+        try:
+            text_content = text_template.format(
+                name=name,
+                email=email,
+                property_name=property_name,
+                weekday_quota=weekday_credits,
+                weekend_quota=weekend_credits,
+                cottage_name=cottage_name,
+                check_in=check_in,
+                check_out=check_out,
+                reason=notes or "N/A",
+                verification_url=""
+            )
+        except Exception:
+            text_content = text_template
+    else:
+        text_content = f"""
     Booking Confirmed!
 
     Dear {name},
@@ -456,6 +490,17 @@ def send_booking_approved_email(
 
     © 2024 Vanatvam. All rights reserved.
     """
+
+    # If format throws any key error, safely replace subject too
+    if subject_template:
+        try:
+            subject = subject_template.format(
+                name=name,
+                property_name=property_name,
+                cottage_name=cottage_name
+            )
+        except Exception:
+            subject = subject_template
 
     return send_email(email, subject, html_content, text_content, **email_kwargs)
 
