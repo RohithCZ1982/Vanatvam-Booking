@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanatvam GCP Deployment Wizard</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg-dark: #111827;
+            --bg-card: #1f2937;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: #374151;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 2rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 1rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .panel {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+
+        .panel-title {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+
+        .input-hint {
+            display: block;
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .script-container {
+            position: relative;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 3rem);
+        }
+
+        .script-header {
+            background-color: #1f2937;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .script-title {
+            font-size: 0.9rem;
+            font-family: monospace;
+            color: var(--text-muted);
+        }
+
+        .copy-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .copy-btn.copied {
+            background-color: #2563eb;
+        }
+
+        pre {
+            margin: 0;
+            padding: 1.5rem;
+            overflow-y: auto;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            white-space: pre-wrap;
+            flex-grow: 1;
+        }
+
+        .comment { color: #6b7280; }
+        .command { color: #f3f4f6; }
+        .variable { color: #3b82f6; font-weight: bold; }
+        .string { color: #10b981; }
+        .flag { color: #fbbf24; }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0px;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .tab:hover {
+            color: white;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>☁️ Vanatvam GCP Deployment Wizard</h1>
+        <p>Configure a new Google Cloud Platform account and generate the exact deployment scripts needed.</p>
+    </div>
+
+    <div class="panel">
+        <h2 class="panel-title">⚙️ Configuration</h2>
+        
+        <div class="form-group">
+            <label for="projectId">GCP Project ID</label>
+            <input type="text" id="projectId" placeholder="e.g. new-vanatvam-project" oninput="generateScripts()">
+            <span class="input-hint">The unique ID of the Google Cloud Project to deploy to.</span>
+        </div>
+
+        <div class="form-group">
+            <label for="region">GCP Region</label>
+            <select id="region" onchange="generateScripts()">
+                <option value="asia-south1">asia-south1 (Mumbai) - Recommended</option>
+                <option value="asia-southeast1">asia-southeast1 (Singapore)</option>
+                <option value="us-central1">us-central1 (Iowa)</option>
+                <option value="europe-west1">europe-west1 (Belgium)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="dbPassword">Database Password</label>
+            <input type="text" id="dbPassword" placeholder="Strong!Password#123" oninput="generateScripts()">
+            <span class="input-hint">Admin password for the new Cloud SQL PostgreSQL instance.</span>
+        </div>
+
+        <div class="form-group">
+            <label for="jwtSecret">JWT Secret Key</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="jwtSecret" oninput="generateScripts()">
+                <button type="button" class="copy-btn" style="background:#4b5563" onclick="generateRandomJWT()">Regenerate</button>
+            </div>
+            <span class="input-hint">Used for signing authentication tokens. Keep this secure.</span>
+        </div>
+
+        <div class="form-group">
+            <label for="projectPath">Local Project Path</label>
+            <input type="text" id="projectPath" value="/Users/rohithkumar/Documents/MySites/Vanatvam-Booking" oninput="generateScripts()">
+            <span class="input-hint">Absolute path to your local Vanatvam-Booking code folder.</span>
+        </div>
+    </div>
+
+    <div class="panel" style="display: flex; flex-direction: column;">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('backend')" id="tab-backend">1. Backend Deployment</button>
+            <button class="tab" onclick="switchTab('frontend')" id="tab-frontend">2. Frontend Deployment</button>
+        </div>
+
+        <div class="script-container">
+            <div class="script-header">
+                <span class="script-title" id="script-title"># terminal-commands.sh</span>
+                <button class="copy-btn" id="copy-btn" onclick="copyScript()">Copy Script</button>
+            </div>
+            <pre id="output-script"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let currentTab = 'backend';
+    let generatedScriptRaw = '';
+
+    // Initialize Random JWT
+    function generateRandomJWT() {
+        const array = new Uint8Array(32);
+        window.crypto.getRandomValues(array);
+        const hex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        document.getElementById('jwtSecret').value = hex;
+        generateScripts();
+    }
+
+    // Call on load
+    window.onload = () => {
+        generateRandomJWT();
+        document.getElementById('projectId').value = 'my-new-vanatvam-' + Math.floor(Math.random() * 1000);
+        document.getElementById('dbPassword').value = 'VanatvamTempDB#' + Math.floor(Math.random() * 10000);
+        generateScripts();
+    };
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        generateScripts();
+    }
+
+    function generateScripts() {
+        const projectId = document.getElementById('projectId').value.trim() || '[YOUR-PROJECT-ID]';
+        const region = document.getElementById('region').value;
+        const dbPassword = document.getElementById('dbPassword').value.trim() || '[DB-PASSWORD]';
+        const jwtSecret = document.getElementById('jwtSecret').value.trim() || '[JWT-SECRET]';
+        const projectPath = document.getElementById('projectPath').value.trim() || '.';
+
+        let script = '';
+
+        if (currentTab === 'backend') {
+            document.getElementById('script-title').textContent = '# terminal: deploy-backend.sh';
+            script = `#!/bin/bash
+# ==============================================================================
+# VANATVAM BACKEND DEPLOYMENT SCRIPT
+# Run these commands in your terminal to set up GCP infrastructure from scratch.
+# IMPORTANT: Ensure you have already run: gcloud auth login
+# ==============================================================================
+
+# 1. Set current project
+gcloud config set project ${projectId}
+
+# 2. Enable Required APIs (May take a few minutes)
+echo "Enabling GCP Services..."
+gcloud services enable \\
+  run.googleapis.com \\
+  sql-component.googleapis.com \\
+  sqladmin.googleapis.com \\
+  artifactregistry.googleapis.com \\
+  cloudbuild.googleapis.com \\
+  secretmanager.googleapis.com \\
+  firebase.googleapis.com \\
+  firebasehosting.googleapis.com
+
+# 3. Create Cloud SQL PostgreSQL Database
+echo "Creating Cloud SQL Database instance (Takes 5-10 minutes)..."
+gcloud sql instances create vanatvam-db \\
+  --database-version=POSTGRES_15 \\
+  --tier=db-f1-micro \\
+  --region=${region} \\
+  --storage-auto-increase \\
+  --storage-size=10GB \\
+  --availability-type=zonal
+
+echo "Creating 'vanatvam' database..."
+gcloud sql databases create vanatvam --instance=vanatvam-db
+
+echo "Creating database user..."
+gcloud sql users create vanatvam_user \\
+  --instance=vanatvam-db \\
+  --password="${dbPassword}"
+
+# 4. Store Secrets in Secret Manager
+echo "Creating Secrets..."
+echo -n "postgresql+psycopg2://vanatvam_user:${dbPassword}@/vanatvam?host=/cloudsql/${projectId}:${region}:vanatvam-db" | \\
+  gcloud secrets create DATABASE_URL --data-file=-
+
+echo -n "${jwtSecret}" | \\
+  gcloud secrets create JWT_SECRET_KEY --data-file=-
+
+# 5. Set up Artifact Registry (Docker Repo)
+echo "Creating Docker Repository..."
+gcloud artifacts repositories create vanatvam-repo \\
+  --repository-format=docker \\
+  --location=${region} \\
+  --description="Vanatvam Docker images"
+
+gcloud auth configure-docker ${region}-docker.pkg.dev
+
+# 6. Build and Push Backend Image
+echo "Building Docker container..."
+cd ${projectPath}/backend
+docker build -t ${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest .
+docker push ${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest
+
+# 7. Grant Cloud Run Access to Secrets & SQL
+PROJECT_NUMBER=$(gcloud projects describe ${projectId} --format="value(projectNumber)")
+
+gcloud projects add-iam-policy-binding ${projectId} \\
+  --member="serviceAccount:\${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \\
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud projects add-iam-policy-binding ${projectId} \\
+  --member="serviceAccount:\${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \\
+  --role="roles/cloudsql.client"
+
+# 8. Deploy to Cloud Run
+echo "Deploying to Cloud Run..."
+gcloud run deploy vanatvam-backend \\
+  --image=${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest \\
+  --region=${region} \\
+  --platform=managed \\
+  --allow-unauthenticated \\
+  --port=8000 \\
+  --add-cloudsql-instances=${projectId}:${region}:vanatvam-db \\
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=JWT_SECRET_KEY:latest"
+
+echo "✅ Backend Deployment Complete!"
+echo "Run this command to get your new API URL:"
+echo "gcloud run services describe vanatvam-backend --region=${region} --format='value(status.url)'"`;
+
+        } else if (currentTab === 'frontend') {
+            document.getElementById('script-title').textContent = '# terminal: deploy-frontend.sh';
+            script = `#!/bin/bash
+# ==============================================================================
+# VANATVAM FRONTEND DEPLOYMENT SCRIPT
+# Run this AFTER the backend is successfully deployed and running.
+# ==============================================================================
+
+cd ${projectPath}/frontend
+
+# 1. Fetch the new Backend API URL
+API_URL=$(gcloud run services describe vanatvam-backend \\
+  --project=${projectId} \\
+  --region=${region} \\
+  --format="value(status.url)")
+
+echo "Discovered Backend URL: \$API_URL"
+
+# 2. Update the frontend Production Environment File
+echo "REACT_APP_API_URL=\$API_URL" > .env.production
+
+# 3. Create/Update the Firebase project configuration
+echo '{
+  "projects": {
+    "default": "${projectId}"
+  }
+}' > .firebaserc
+
+# 4. Build the React Application
+echo "Building the React frontend..."
+npm install
+npm run build
+
+# 5. Deploy to Firebase Hosting
+echo "Deploying to Firebase Hosting..."
+# If this is the first time running Firebase for this account, you might need:
+# npm install -g firebase-tools
+# firebase login
+firebase deploy --only hosting --project ${projectId}
+
+echo "✅ Frontend Deployment Complete!"
+echo "Your app is now live at: https://${projectId}.web.app"
+echo "NOTE: Remember to update the CORS origins in backend/main.py if you add a custom domain!"`;
+        }
+
+        generatedScriptRaw = script;
+
+        // Simple syntax highlighting for bash
+        let htmlContent = script
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/^(#.*)$/gm, '<span class="comment">$1</span>') // Comments
+            .replace(/^(gcloud|docker|npm|firebase|cd|echo|export) /gm, '<span class="command">$1 </span>') // Commands
+            .replace(/(--[a-zA-Z0-9-]+[=\s])/g, '<span class="flag">$1</span>') // Flags
+            .replace(/(\${[a-zA-Z_]+}|\$[a-zA-Z_]+)/g, '<span class="variable">$1</span>') // Variables
+            .replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="string">$&</span>'); // Strings
+
+        document.getElementById('output-script').innerHTML = htmlContent;
+    }
+
+    function copyScript() {
+        navigator.clipboard.writeText(generatedScriptRaw).then(() => {
+            const btn = document.getElementById('copy-btn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+</script>
+</body>
+</html>
