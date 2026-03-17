@@ -91,8 +91,9 @@ class CottageCreate(CottageBase):
 class CottageResponse(CottageBase):
     id: int
     property_id: int
+    property_name: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

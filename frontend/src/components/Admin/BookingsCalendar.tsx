@@ -215,7 +215,7 @@ const BookingsCalendar: React.FC = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const days = getDaysInMonth(currentDate);
   const selectedDateBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
@@ -253,16 +253,18 @@ const BookingsCalendar: React.FC = () => {
             ) : (
               <>
                 <div className="calendar-controls" style={{ marginBottom: '20px' }}>
-                  <button onClick={previousMonth} className="btn btn-secondary" style={{ padding: '5px 15px', minWidth: 'auto' }}>
-                    ← Previous
+                  <button onClick={previousMonth} className="btn btn-secondary cal-nav-btn">
+                    <span className="cal-nav-full">← Previous</span>
+                    <span className="cal-nav-short">←</span>
                   </button>
-                  <h3 style={{ margin: '0 20px', display: 'inline-block' }}>
+                  <h3 className="cal-month-heading">
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </h3>
-                  <button onClick={nextMonth} className="btn btn-secondary" style={{ padding: '5px 15px', minWidth: 'auto' }}>
-                    Next →
+                  <button onClick={nextMonth} className="btn btn-secondary cal-nav-btn">
+                    <span className="cal-nav-full">Next →</span>
+                    <span className="cal-nav-short">→</span>
                   </button>
-                  <button onClick={goToToday} className="btn btn-primary" style={{ marginLeft: '20px', padding: '5px 15px', minWidth: 'auto' }}>
+                  <button onClick={goToToday} className="btn btn-primary cal-nav-btn">
                     Today
                   </button>
                 </div>
@@ -378,14 +380,14 @@ const BookingsCalendar: React.FC = () => {
                             <tbody>
                               {selectedDateBookings.map(booking => (
                                 <tr key={booking.id}>
-                                  <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}><strong>{booking.cottage_name}</strong><br /><span style={{ fontSize: '12px', color: '#717171' }}>{booking.property_name || 'N/A'}</span></td>
-                                  <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>{booking.user_name}<br /><span style={{ fontSize: '12px', color: '#717171' }}>{new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}</span></td>
-                                  <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
+                                  <td data-label="Cottage" style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}><strong>{booking.cottage_name}</strong><br /><span style={{ fontSize: '12px', color: '#717171' }}>{booking.property_name || 'N/A'}</span></td>
+                                  <td data-label="Guest" style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>{booking.user_name}<br /><span style={{ fontSize: '12px', color: '#717171' }}>{new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}</span></td>
+                                  <td data-label="Status" style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
                                     <span className={`status-badge ${booking.status}`}>
                                       {booking.status}
                                     </span>
                                   </td>
-                                  <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
+                                  <td data-label="Actions" style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
                                     {booking.status !== 'cancelled' && booking.status !== 'rejected' ? (
                                       <button
                                         onClick={() => handleRevokeBooking(booking.id, booking.cottage_name, booking.user_name)}

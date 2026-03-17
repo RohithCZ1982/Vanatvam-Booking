@@ -4,6 +4,7 @@ import api from '../../services/api';
 interface Cottage {
   id: number;
   cottage_id: string;
+  property_name?: string;
 }
 
 interface MaintenanceBlock {
@@ -243,7 +244,7 @@ const MaintenanceBlocking: React.FC = () => {
           <option value="">Select Cottage</option>
           {cottages.map((cottage) => (
             <option key={cottage.id} value={cottage.id}>
-              {cottage.cottage_id}
+              {cottage.property_name ? `${cottage.property_name} - ${cottage.cottage_id}` : cottage.cottage_id}
             </option>
           ))}
         </select>

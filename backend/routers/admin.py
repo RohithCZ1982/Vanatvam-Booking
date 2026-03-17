@@ -410,10 +410,24 @@ def get_cottages(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
-    query = db.query(Cottage)
+    from sqlalchemy.orm import joinedload
+    query = db.query(Cottage).options(joinedload(Cottage.property))
     if property_id:
         query = query.filter(Cottage.property_id == property_id)
-    return query.all()
+    cottages = query.all()
+    result = []
+    for c in cottages:
+        result.append(CottageResponse(
+            id=c.id,
+            cottage_id=c.cottage_id,
+            property_id=c.property_id,
+            property_name=c.property.name if c.property else None,
+            capacity=c.capacity,
+            amenities=c.amenities,
+            image_url=c.image_url,
+            created_at=c.created_at,
+        ))
+    return result
 
 @router.put("/cottages/{cottage_id}", response_model=CottageResponse)
 def update_cottage(

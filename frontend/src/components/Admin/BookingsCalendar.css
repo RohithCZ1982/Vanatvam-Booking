@@ -6,6 +6,20 @@
   gap: 10px;
 }
 
+.cal-nav-btn {
+  padding: 5px 15px;
+  min-width: auto;
+}
+
+.cal-month-heading {
+  margin: 0 20px;
+  display: inline-block;
+}
+
+.cal-nav-short {
+  display: none;
+}
+
 .calendar-layout {
   display: flex;
   gap: 24px;
@@ -189,8 +203,48 @@
 }
 
 @media (max-width: 768px) {
+  .cal-nav-full {
+    display: none;
+  }
+
+  .cal-nav-short {
+    display: inline;
+  }
+
+  .cal-nav-btn {
+    padding: 5px 10px;
+    font-size: 16px;
+    min-width: 36px;
+  }
+
+  .cal-month-heading {
+    font-size: 15px;
+    margin: 0 8px;
+  }
+
+  /* Break out of .card's 20px padding to fill full card width */
+  .calendar-container {
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
+  }
+
+  .calendar-grid {
+    gap: 3px;
+    padding: 6px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .calendar-day-header {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+
   .calendar-day {
-    min-height: 60px;
+    min-height: 52px;
+    padding: 3px;
   }
 
   .calendar-day-number {
@@ -201,6 +255,114 @@
   .booking-badge {
     font-size: 9px;
     padding: 1px 3px;
-    line-height: 1.1;
+    line-height: 1.2;
+  }
+
+  .selected-date-bookings {
+    padding: 16px 12px;
+  }
+
+  .selected-date-bookings table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-container {
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
+  }
+
+  .calendar-grid {
+    gap: 2px;
+    padding: 4px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .calendar-day-header {
+    padding: 5px 1px;
+    font-size: 10px;
+    border-radius: 2px;
+  }
+
+  .calendar-day {
+    min-height: 42px;
+    padding: 2px;
+  }
+
+  .calendar-day-number {
+    font-size: 10px;
+  }
+
+  /* Show only dot indicator for bookings on very small screens */
+  .booking-badge {
+    font-size: 0;
+    padding: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 1px;
+  }
+
+  .booking-badge.more {
+    font-size: 8px;
+    width: auto;
+    height: auto;
+    border-radius: 3px;
+    padding: 1px 2px;
+  }
+
+  .calendar-bookings {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .selected-date-bookings h3 {
+    font-size: 15px !important;
+  }
+
+  /* Stack table rows as cards on very small screens */
+  .selected-date-bookings table,
+  .selected-date-bookings thead,
+  .selected-date-bookings tbody,
+  .selected-date-bookings th,
+  .selected-date-bookings td,
+  .selected-date-bookings tr {
+    display: block;
+  }
+
+  .selected-date-bookings thead tr {
+    display: none;
+  }
+
+  .selected-date-bookings tbody tr {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 10px;
+    background: #fafafa;
+  }
+
+  .selected-date-bookings td {
+    border: none !important;
+    padding: 4px 0 !important;
+    font-size: 13px;
+  }
+
+  .selected-date-bookings td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    margin-right: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
   }
 }
