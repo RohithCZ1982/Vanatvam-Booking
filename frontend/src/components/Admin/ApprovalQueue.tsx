@@ -40,7 +40,7 @@ const ApprovalQueue: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Approval Queue (ADM-10)</h2>
+      <h2>Approval Queue</h2>
       <table className="table">
         <thead>
           <tr>

@@ -114,7 +114,7 @@ const HolidayConfiguration: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Holiday Configuration (ADM-14)</h2>
+      <h2>Holiday Configuration</h2>
       {success && <div className="success">Holidays configured successfully</div>}
       {editingHoliday && (
         <div style={{ 

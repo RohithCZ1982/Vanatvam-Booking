@@ -71,7 +71,7 @@ const PendingMembers: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Pending Member Queue (ADM-01)</h2>
+      <h2>Pending Member Queue</h2>
       <table className="table">
         <thead>
           <tr>

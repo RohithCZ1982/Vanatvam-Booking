@@ -33,7 +33,7 @@ const TransactionHistory: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Transaction History (OWN-10)</h2>
+      <h2>Transaction History</h2>
       <table className="table">
         <thead>
           <tr>

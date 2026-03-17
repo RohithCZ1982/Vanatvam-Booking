@@ -41,7 +41,7 @@ const QuotaReset: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Global Quota Reset (ADM-16)</h2>
+      <h2>Global Quota Reset</h2>
       {error && <div className="error">{error}</div>}
       {success && (
         <div className="success">

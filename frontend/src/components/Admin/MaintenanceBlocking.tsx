@@ -222,7 +222,7 @@ const MaintenanceBlocking: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Maintenance Blocking (ADM-08)</h2>
+      <h2>Maintenance Blocking</h2>
       {editingBlock && (
         <div style={{ 
           padding: '15px', 

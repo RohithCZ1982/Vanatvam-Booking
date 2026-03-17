@@ -182,7 +182,7 @@ const CottageManagement: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Cottage Inventory (ADM-07)</h2>
+      <h2>Cottage Inventory</h2>
       <div style={{ marginBottom: '20px' }}>
         <label>
           Filter by Sanctuary:
@@ -267,8 +267,6 @@ const CottageManagement: React.FC = () => {
         <thead>
           <tr>
             <th>Image</th>
-            <th>ID</th>
-            <th>Cottage ID</th>
             <th>Sanctuary</th>
             <th>Capacity</th>
             <th>Amenities</th>
@@ -276,14 +274,19 @@ const CottageManagement: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {cottages.map((cottage) => {
+          {[...cottages].sort((a, b) => {
+            const propA = properties.find((p) => p.id === a.property_id)?.name || '';
+            const propB = properties.find((p) => p.id === b.property_id)?.name || '';
+            const propCmp = propA.localeCompare(propB);
+            return propCmp !== 0 ? propCmp : a.cottage_id.localeCompare(b.cottage_id);
+          }).map((cottage) => {
             const property = properties.find((p) => p.id === cottage.property_id);
             const imageUrl = getImageUrl(cottage.image_url);
             const isUploading = uploadingId === cottage.id;
             const isDragTarget = dragOver === cottage.id;
 
             return (
-              <tr key={cottage.id}>
+              <tr key={cottage.id} style={{ verticalAlign: 'middle' }}>
                 <td style={{ width: '120px', verticalAlign: 'middle' }}>
                   <div
                     onDragOver={(e) => handleDragOver(e, cottage.id)}
@@ -414,8 +417,6 @@ const CottageManagement: React.FC = () => {
                     </div>
                   )}
                 </td>
-                <td>{cottage.id}</td>
-                <td>{cottage.cottage_id}</td>
                 <td>{property?.name}</td>
                 <td>{cottage.capacity}</td>
                 <td>{cottage.amenities}</td>

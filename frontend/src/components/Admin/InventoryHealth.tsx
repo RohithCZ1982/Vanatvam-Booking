@@ -99,7 +99,7 @@ const InventoryHealth: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Inventory Health View (ADM-09)</h2>
+      <h2>Inventory Health View</h2>
       <div style={{ marginBottom: '20px' }}>
         <input
           type="date"

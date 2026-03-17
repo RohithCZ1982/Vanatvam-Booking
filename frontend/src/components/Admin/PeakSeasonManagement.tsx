@@ -103,7 +103,7 @@ const PeakSeasonManagement: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Peak Season Definition (ADM-15)</h2>
+      <h2>Peak Season Definition</h2>
       {error && <div className="error">{error}</div>}
       {success && <div className="success">Peak season {editingSeason ? 'updated' : 'created'} successfully</div>}
       {editingSeason && (

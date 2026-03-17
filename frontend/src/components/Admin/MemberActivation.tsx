@@ -53,7 +53,7 @@ const MemberActivation: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Activate Member (ADM-02)</h2>
+      <h2>Activate Member</h2>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <label>

@@ -31,7 +31,7 @@ const BookingDecision: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Booking Decision (ADM-11)</h2>
+      <h2>Booking Decision</h2>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <label>

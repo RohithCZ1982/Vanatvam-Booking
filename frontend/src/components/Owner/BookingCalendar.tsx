@@ -274,7 +274,7 @@ const BookingCalendar: React.FC = () => {
   return (
     <div>
       <div className="card">
-        <h2>Book a Cottage (OWN-04, OWN-05, OWN-06, OWN-07)</h2>
+        <h2>Book a Cottage</h2>
         {error && <div className="error">{error}</div>}
         {quotaError && (
           <div className="error" style={{ 
@@ -343,7 +343,7 @@ const BookingCalendar: React.FC = () => {
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
               <h4 style={{ marginTop: '0', marginBottom: '20px', color: '#495057' }}>
-                Cost Breakdown (OWN-06)
+                Cost Breakdown
               </h4>
               <div style={{ 
                 display: 'grid', 

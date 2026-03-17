@@ -56,7 +56,7 @@ const PropertyManagement: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Sanctuary Management (ADM-06)</h2>
+      <h2>Sanctuary Management</h2>
       <button 
         onClick={() => setShowForm(!showForm)} 
         className="btn btn-primary" 
@@ -98,16 +98,14 @@ const PropertyManagement: React.FC = () => {
       <table className="table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Name</th>
             <th>Description</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {properties.map((property) => (
+          {[...properties].sort((a, b) => a.name.localeCompare(b.name)).map((property) => (
             <tr key={property.id}>
-              <td>{property.id}</td>
               <td>{property.name}</td>
               <td>{property.description}</td>
               <td>

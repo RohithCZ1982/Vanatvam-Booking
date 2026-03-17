@@ -106,7 +106,7 @@ const QuotaAdjustment: React.FC = () => {
   if (fetching) {
     return (
       <div className="card">
-        <h2>Manual Quota Adjustment (ADM-04)</h2>
+        <h2>Manual Quota Adjustment</h2>
         <p>Loading users...</p>
       </div>
     );
@@ -115,7 +115,7 @@ const QuotaAdjustment: React.FC = () => {
   if (users.length === 0) {
     return (
       <div className="card">
-        <h2>Manual Quota Adjustment (ADM-04)</h2>
+        <h2>Manual Quota Adjustment</h2>
         <p>No active members found. Please activate members first.</p>
       </div>
     );
@@ -123,7 +123,7 @@ const QuotaAdjustment: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Manual Quota Adjustment (ADM-04)</h2>
+      <h2>Manual Quota Adjustment</h2>
       {error && <div className="error">{error}</div>}
       {success && <div className="success">Quota adjusted successfully</div>}
       <form onSubmit={handleSubmit}>

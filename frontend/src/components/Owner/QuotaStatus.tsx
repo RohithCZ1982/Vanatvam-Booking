@@ -53,7 +53,7 @@ const QuotaStatus: React.FC = () => {
   return (
     <div>
       <div className="card">
-        <h2>Quota Status (OWN-08, OWN-09)</h2>
+        <h2>Quota Status</h2>
         
         {/* Total Balance */}
         <div style={{ marginBottom: '30px', marginTop: '20px' }}>

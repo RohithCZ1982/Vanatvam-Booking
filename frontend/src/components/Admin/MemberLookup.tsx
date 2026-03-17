@@ -162,7 +162,7 @@ const MemberLookup: React.FC = () => {
 
   return (
     <div className="card">
-      <h2>Member Lookup & History (ADM-03)</h2>
+      <h2>Member Lookup & History</h2>
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
