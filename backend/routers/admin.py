@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 import os
 import uuid
 import shutil
+from google.cloud import storage as gcs
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List
@@ -447,9 +448,25 @@ def update_cottage(
     db.refresh(db_cottage)
     return db_cottage
 
-# Cottage Image Upload
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "cottages")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Cottage Image Upload — Google Cloud Storage
+GCS_BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "vanatvam-cottage-images")
+
+def _gcs_client():
+    return gcs.Client()
+
+def _delete_gcs_object(image_url: str):
+    """Delete an object from GCS given its public URL."""
+    try:
+        # URL format: https://storage.googleapis.com/BUCKET/OBJECT
+        if "storage.googleapis.com" in image_url:
+            blob_name = "/".join(image_url.split("/")[4:])
+            client = _gcs_client()
+            bucket = client.bucket(GCS_BUCKET_NAME)
+            blob = bucket.blob(blob_name)
+            if blob.exists():
+                blob.delete()
+    except Exception:
+        pass  # Don't fail the request if old image cleanup fails
 
 @router.post("/cottages/{cottage_id}/upload-image")
 async def upload_cottage_image(
@@ -461,39 +478,36 @@ async def upload_cottage_image(
     db_cottage = db.query(Cottage).filter(Cottage.id == cottage_id).first()
     if not db_cottage:
         raise HTTPException(status_code=404, detail="Cottage not found")
-    
+
     # Validate file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF")
-    
+
     # Validate file size (max 5MB)
     contents = await file.read()
     if len(contents) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File size exceeds 5MB limit")
-    
-    # Delete old image if exists
+
+    # Delete old image from GCS if exists
     if db_cottage.image_url:
-        old_filename = db_cottage.image_url.split("/")[-1]
-        old_path = os.path.join(UPLOAD_DIR, old_filename)
-        if os.path.exists(old_path):
-            os.remove(old_path)
-    
-    # Generate unique filename
+        _delete_gcs_object(db_cottage.image_url)
+
+    # Generate unique blob name
     ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    filename = f"cottage_{cottage_id}_{uuid.uuid4().hex[:8]}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    
-    # Save file
-    with open(filepath, "wb") as f:
-        f.write(contents)
-    
-    # Update database
-    image_url = f"/uploads/cottages/{filename}"
+    blob_name = f"cottages/cottage_{cottage_id}_{uuid.uuid4().hex[:8]}{ext}"
+
+    # Upload to GCS
+    client = _gcs_client()
+    bucket = client.bucket(GCS_BUCKET_NAME)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_string(contents, content_type=file.content_type)
+
+    image_url = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{blob_name}"
     db_cottage.image_url = image_url
     db.commit()
     db.refresh(db_cottage)
-    
+
     return {"image_url": image_url, "message": "Image uploaded successfully"}
 
 @router.delete("/cottages/{cottage_id}/image")
@@ -505,16 +519,13 @@ def delete_cottage_image(
     db_cottage = db.query(Cottage).filter(Cottage.id == cottage_id).first()
     if not db_cottage:
         raise HTTPException(status_code=404, detail="Cottage not found")
-    
+
     if db_cottage.image_url:
-        old_filename = db_cottage.image_url.split("/")[-1]
-        old_path = os.path.join(UPLOAD_DIR, old_filename)
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        _delete_gcs_object(db_cottage.image_url)
         db_cottage.image_url = None
         db.commit()
         db.refresh(db_cottage)
-    
+
     return {"message": "Image deleted successfully"}
 
 # ADM-08: Maintenance Blocking

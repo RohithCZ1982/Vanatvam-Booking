@@ -33,6 +33,7 @@ const CottageManagement: React.FC = () => {
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Set<number>>(new Set());
   const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
   useEffect(() => {
@@ -123,13 +124,15 @@ const CottageManagement: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      await api.post(`/api/admin/cottages/${cottageId}/upload-image`, formData, {
+      const response = await api.post(`/api/admin/cottages/${cottageId}/upload-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      fetchCottages();
+      const newImageUrl = response.data.image_url;
+      setBrokenImages(prev => { const s = new Set(prev); s.delete(cottageId); return s; });
+      setCottages(prev => prev.map(c => c.id === cottageId ? { ...c, image_url: newImageUrl } : c));
     } catch (error: any) {
       console.error('Error uploading image:', error);
       alert(error.response?.data?.detail || 'Failed to upload image');
@@ -335,7 +338,7 @@ const CottageManagement: React.FC = () => {
                         }} />
                         Uploading...
                       </div>
-                    ) : imageUrl ? (
+                    ) : imageUrl && !brokenImages.has(cottage.id) ? (
                       <img
                         src={imageUrl}
                         alt={`Cottage ${cottage.cottage_id}`}
@@ -344,10 +347,7 @@ const CottageManagement: React.FC = () => {
                           height: '100%',
                           objectFit: 'cover',
                         }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style="font-size: 24px;">🏠</span>';
-                        }}
+                        onError={() => setBrokenImages(prev => new Set(prev).add(cottage.id))}
                       />
                     ) : (
                       <div style={{ textAlign: 'center', fontSize: '11px', color: '#adb5bd', padding: '5px' }}>
