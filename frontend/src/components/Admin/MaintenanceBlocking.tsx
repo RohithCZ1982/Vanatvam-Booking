@@ -40,6 +40,8 @@ const MaintenanceBlocking: React.FC = () => {
   const [editingBlock, setEditingBlock] = useState<MaintenanceBlock | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [conflictBookings, setConflictBookings] = useState<Booking[]>([]);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<MaintenanceBlock | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -50,6 +52,30 @@ const MaintenanceBlocking: React.FC = () => {
     fetchCottages();
     fetchBlocks();
   }, []);
+
+  useEffect(() => {
+    const { cottage_id, start_date, end_date } = formData;
+    if (!cottage_id || !start_date || !end_date || start_date >= end_date) {
+      setConflictBookings([]);
+      return;
+    }
+    let cancelled = false;
+    const check = async () => {
+      setCheckingConflicts(true);
+      try {
+        const res = await api.get('/api/admin/check-booking-conflicts', {
+          params: { cottage_id, start_date, end_date },
+        });
+        if (!cancelled) setConflictBookings(res.data);
+      } catch {
+        if (!cancelled) setConflictBookings([]);
+      } finally {
+        if (!cancelled) setCheckingConflicts(false);
+      }
+    };
+    const timer = setTimeout(check, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [formData.cottage_id, formData.start_date, formData.end_date]);
 
   const fetchCottages = async () => {
     try {
@@ -172,6 +198,7 @@ const MaintenanceBlocking: React.FC = () => {
       }
       fetchBlocks();
       setFormData({ cottage_id: '', start_date: '', end_date: '', reason: '' });
+      setConflictBookings([]);
     } catch (error) {
       console.error('Error saving maintenance block:', error);
     } finally {
@@ -218,6 +245,7 @@ const MaintenanceBlocking: React.FC = () => {
   const handleCancelEdit = () => {
     setEditingBlock(null);
     setFormData({ cottage_id: '', start_date: '', end_date: '', reason: '' });
+    setConflictBookings([]);
   };
 
   return (
@@ -242,10 +270,21 @@ const MaintenanceBlocking: React.FC = () => {
           className="input"
         >
           <option value="">Select Cottage</option>
-          {cottages.map((cottage) => (
-            <option key={cottage.id} value={cottage.id}>
-              {cottage.property_name ? `${cottage.property_name} - ${cottage.cottage_id}` : cottage.cottage_id}
-            </option>
+          {Object.entries(
+            cottages.reduce<Record<string, Cottage[]>>((groups, cottage) => {
+              const sanctuary = cottage.property_name || 'Other';
+              if (!groups[sanctuary]) groups[sanctuary] = [];
+              groups[sanctuary].push(cottage);
+              return groups;
+            }, {})
+          ).sort(([a], [b]) => a.localeCompare(b)).map(([sanctuary, group]) => (
+            <optgroup key={sanctuary} label={sanctuary}>
+              {group.sort((a, b) => a.cottage_id.localeCompare(b.cottage_id)).map((cottage) => (
+                <option key={cottage.id} value={cottage.id}>
+                  {cottage.cottage_id}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <input
@@ -269,10 +308,65 @@ const MaintenanceBlocking: React.FC = () => {
           className="input"
           rows={3}
         />
+        {/* Conflict warning */}
+        {checkingConflicts && (
+          <div style={{ padding: '10px', fontSize: '13px', color: '#6c757d' }}>⏳ Checking for booking conflicts...</div>
+        )}
+        {!checkingConflicts && conflictBookings.length > 0 && (
+          <div style={{
+            margin: '10px 0',
+            padding: '15px',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '8px',
+          }}>
+            <div style={{ fontWeight: '600', color: '#856404', marginBottom: '10px', fontSize: '14px' }}>
+              ⚠️ {conflictBookings.length} existing booking{conflictBookings.length > 1 ? 's' : ''} overlap with these dates:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {conflictBookings.map((b) => (
+                <div key={b.id} style={{
+                  padding: '10px 12px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '6px',
+                  border: '1px solid #ffe08a',
+                  fontSize: '13px',
+                  color: '#495057',
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr auto',
+                  gap: '8px',
+                  alignItems: 'center',
+                }}>
+                  <span style={{ fontWeight: '600', color: '#2c3e50' }}>👤 {b.user_name}</span>
+                  <span style={{ color: '#6c757d' }}>{b.user_email}</span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    backgroundColor: b.status === 'confirmed' ? '#d4edda' : '#ffeeba',
+                    color: b.status === 'confirmed' ? '#155724' : '#856404',
+                  }}>
+                    {b.status.toUpperCase()}
+                  </span>
+                  <span style={{ gridColumn: '1 / -1', color: '#495057' }}>
+                    📅 {new Date(b.check_in).toLocaleDateString()} → {new Date(b.check_out).toLocaleDateString()}
+                    &nbsp;&nbsp;|&nbsp;&nbsp;
+                    Credits: {b.weekday_credits_used + b.weekend_credits_used}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#856404' }}>
+              These bookings will need to be revoked after the block is created.
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             disabled={loading}
             title={loading ? 'Saving...' : editingBlock ? 'Update Maintenance Block' : 'Create Maintenance Block'}
             style={{ padding: '5px 10px', minWidth: 'auto' }}

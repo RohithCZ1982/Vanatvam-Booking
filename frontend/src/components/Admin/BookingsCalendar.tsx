@@ -271,7 +271,7 @@ const BookingsCalendar: React.FC = () => {
 
                 <div style={{ marginBottom: '15px', fontSize: '12px', color: '#6c757d' }}>
                   <span style={{ marginRight: '15px' }}>🟡 = Holiday/Peak Season</span>
-                  <span style={{ marginRight: '15px' }}>🔧 = Maintenance Day</span>
+                  <span style={{ marginRight: '15px', color: '#495057' }}><span style={{ filter: 'brightness(0.4)' }}>🔧</span> = Maintenance Day</span>
                 </div>
 
                 <div className="calendar-layout">

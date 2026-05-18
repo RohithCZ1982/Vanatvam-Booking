@@ -529,6 +529,45 @@ def delete_cottage_image(
     return {"message": "Image deleted successfully"}
 
 # ADM-08: Maintenance Blocking
+@router.get("/check-booking-conflicts")
+def check_booking_conflicts(
+    cottage_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Check for bookings that overlap with a proposed maintenance date range"""
+    from datetime import date as date_type
+    start = date_type.fromisoformat(start_date)
+    end = date_type.fromisoformat(end_date)
+
+    bookings = db.query(Booking).filter(
+        Booking.cottage_id == cottage_id,
+        Booking.check_in < end,
+        Booking.check_out > start,
+        Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED])
+    ).all()
+
+    result = []
+    for booking in bookings:
+        user = db.query(User).filter(User.id == booking.user_id).first()
+        cottage = db.query(Cottage).filter(Cottage.id == booking.cottage_id).first()
+        property_obj = db.query(Property).filter(Property.id == cottage.property_id).first() if cottage and cottage.property_id else None
+        result.append({
+            "id": booking.id,
+            "user_name": user.name if user else "Unknown",
+            "user_email": user.email if user else "Unknown",
+            "property_name": property_obj.name if property_obj else "No Property",
+            "cottage_name": cottage.cottage_id if cottage else "Unknown",
+            "check_in": booking.check_in,
+            "check_out": booking.check_out,
+            "weekday_credits_used": booking.weekday_credits_used,
+            "weekend_credits_used": booking.weekend_credits_used,
+            "status": booking.status,
+        })
+    return result
+
 @router.post("/maintenance-blocks", response_model=MaintenanceBlockResponse)
 def create_maintenance_block(
     block_data: MaintenanceBlockCreate,

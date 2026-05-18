@@ -271,6 +271,7 @@ const CottageManagement: React.FC = () => {
           <tr>
             <th>Image</th>
             <th>Sanctuary</th>
+            <th>Cottage</th>
             <th>Capacity</th>
             <th>Amenities</th>
             <th>Actions</th>
@@ -418,6 +419,7 @@ const CottageManagement: React.FC = () => {
                   )}
                 </td>
                 <td>{property?.name}</td>
+                <td>{cottage.cottage_id}</td>
                 <td>{cottage.capacity}</td>
                 <td>{cottage.amenities}</td>
                 <td>
