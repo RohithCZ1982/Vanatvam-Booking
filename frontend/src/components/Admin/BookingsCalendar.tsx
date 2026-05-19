@@ -100,7 +100,7 @@ const BookingsCalendar: React.FC = () => {
       const checkInStr = booking.check_in.split('T')[0];
       const checkOutStr = booking.check_out.split('T')[0];
 
-      return dateStr >= checkInStr && dateStr <= checkOutStr;
+      return dateStr >= checkInStr && dateStr < checkOutStr;
     });
   };
 

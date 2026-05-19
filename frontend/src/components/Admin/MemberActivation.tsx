@@ -13,6 +13,7 @@ const MemberActivation: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [formData, setFormData] = useState({
     property_id: '',
+    plot_number: '',
     weekday_quota: 12,
     weekend_quota: 6,
   });
@@ -40,8 +41,10 @@ const MemberActivation: React.FC = () => {
     try {
       await api.post('/api/admin/activate-member', {
         user_id: parseInt(userId!),
-        ...formData,
         property_id: parseInt(formData.property_id),
+        plot_number: formData.plot_number || null,
+        weekday_quota: formData.weekday_quota,
+        weekend_quota: formData.weekend_quota,
       });
       navigate('/admin/pending-members');
     } catch (err: any) {
@@ -71,6 +74,16 @@ const MemberActivation: React.FC = () => {
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          Plot Number:
+          <input
+            type="text"
+            placeholder="e.g. P-42 (optional)"
+            value={formData.plot_number}
+            onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
+            className="input"
+          />
         </label>
         <label>
           Weekday Quota:

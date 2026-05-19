@@ -35,6 +35,8 @@ class MemberEdit(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     password: Optional[str] = None
+    plot_number: Optional[str] = None
+    property_id: Optional[int] = None
 
 class MemberRejection(BaseModel):
     user_id: int
@@ -141,6 +143,7 @@ class BookingResponse(BaseModel):
 class MemberActivation(BaseModel):
     user_id: int
     property_id: int
+    plot_number: Optional[str] = None
     weekday_quota: int = 12
     weekend_quota: int = 6
 

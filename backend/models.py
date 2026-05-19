@@ -30,6 +30,7 @@ class User(Base):
     role = Column(SQLEnum(UserRole), default=UserRole.OWNER)
     status = Column(SQLEnum(UserStatus), default=UserStatus.PENDING)
     property_id = Column(Integer, ForeignKey("properties.id"), nullable=True)
+    plot_number = Column(String, nullable=True)
     weekday_quota = Column(Integer, default=12)
     weekend_quota = Column(Integer, default=6)
     weekday_balance = Column(Integer, default=0)

@@ -59,6 +59,7 @@ def activate_member(
     
     user.status = UserStatus.ACTIVE
     user.property_id = activation.property_id
+    user.plot_number = activation.plot_number
     user.weekday_quota = activation.weekday_quota
     user.weekend_quota = activation.weekend_quota
     user.weekday_balance = activation.weekday_quota
@@ -222,7 +223,14 @@ def edit_member(
         user.phone = member_data.phone
     if member_data.password is not None:
         user.password_hash = get_password_hash(member_data.password)
-    
+    if member_data.plot_number is not None:
+        user.plot_number = member_data.plot_number
+    if member_data.property_id is not None:
+        property_obj = db.query(Property).filter(Property.id == member_data.property_id).first()
+        if not property_obj:
+            raise HTTPException(status_code=404, detail="Property not found")
+        user.property_id = member_data.property_id
+
     db.commit()
     db.refresh(user)
     return user
@@ -238,12 +246,11 @@ def adjust_quota(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user.weekday_balance += adjustment.weekday_change
-    user.weekend_balance += adjustment.weekend_change
-    
-    # Ensure balances don't go negative
-    user.weekday_balance = max(0, user.weekday_balance)
-    user.weekend_balance = max(0, user.weekend_balance)
+    # Adjust both the allotted quota and the available balance
+    user.weekday_quota = max(0, user.weekday_quota + adjustment.weekday_change)
+    user.weekend_quota = max(0, user.weekend_quota + adjustment.weekend_change)
+    user.weekday_balance = max(0, user.weekday_balance + adjustment.weekday_change)
+    user.weekend_balance = max(0, user.weekend_balance + adjustment.weekend_change)
     
     transaction = QuotaTransaction(
         user_id=user.id,

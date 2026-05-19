@@ -203,13 +203,8 @@
 }
 
 @media (max-width: 768px) {
-  .cal-nav-full {
-    display: none;
-  }
-
-  .cal-nav-short {
-    display: inline;
-  }
+  .cal-nav-full { display: none; }
+  .cal-nav-short { display: inline; }
 
   .cal-nav-btn {
     padding: 5px 10px;
@@ -222,7 +217,6 @@
     margin: 0 8px;
   }
 
-  /* Break out of .card's 20px padding to fill full card width */
   .calendar-container {
     margin-left: -20px;
     margin-right: -20px;
@@ -240,11 +234,22 @@
   .calendar-day-header {
     padding: 6px 2px;
     font-size: 11px;
+    /* fixed header height */
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
+  /* Square cells — height = column width so every month is the same size */
   .calendar-day {
-    min-height: 52px;
+    aspect-ratio: 1 / 1;
+    min-height: unset;
+    height: unset;
     padding: 3px;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 
   .calendar-day-number {
@@ -286,29 +291,36 @@
   }
 
   .calendar-day-header {
-    padding: 5px 1px;
+    padding: 4px 1px;
     font-size: 10px;
     border-radius: 2px;
+    height: 24px;
   }
 
+  /* Square cells — consistent across all months */
   .calendar-day {
-    min-height: 42px;
+    aspect-ratio: 1 / 1;
+    min-height: unset;
+    height: unset;
     padding: 2px;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 
   .calendar-day-number {
     font-size: 10px;
   }
 
-  /* Show only dot indicator for bookings on very small screens */
+  /* Dot indicators on very small screens */
   .booking-badge {
     font-size: 0;
     padding: 0;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     display: inline-block;
     margin: 1px;
+    flex-shrink: 0;
   }
 
   .booking-badge.more {
@@ -329,7 +341,7 @@
     font-size: 15px !important;
   }
 
-  /* Stack table rows as cards on very small screens */
+  /* Stack table rows as cards */
   .selected-date-bookings table,
   .selected-date-bookings thead,
   .selected-date-bookings tbody,
@@ -339,9 +351,7 @@
     display: block;
   }
 
-  .selected-date-bookings thead tr {
-    display: none;
-  }
+  .selected-date-bookings thead tr { display: none; }
 
   .selected-date-bookings tbody tr {
     border: 1px solid #eee;

@@ -133,15 +133,14 @@ const MyTrips: React.FC = () => {
 
   const filters = [
     { key: 'all', label: 'All' },
-    { key: 'upcoming', label: 'Upcoming' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'pending', label: 'Pending' },
     { key: 'past', label: 'Past' },
   ];
 
   const filteredBookings = bookings.filter(b => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'upcoming') return isUpcoming(b.check_in) && (b.status === 'confirmed' || b.status === 'pending');
+    if (activeFilter === 'all') return isUpcoming(b.check_in) && (b.status === 'confirmed' || b.status === 'pending');
+    if (activeFilter === 'confirmed') return b.status === 'confirmed' && isUpcoming(b.check_in);
     if (activeFilter === 'past') return !isUpcoming(b.check_in) || b.status === 'cancelled' || b.status === 'rejected';
     return b.status === activeFilter;
   });
@@ -318,9 +317,6 @@ const MyTrips: React.FC = () => {
   // ============================================================
   // TRIPS LIST (Airbnb-style)
   // ============================================================
-  const upcomingTrips = filteredBookings.filter(b => isUpcoming(b.check_in) && (b.status === 'confirmed' || b.status === 'pending'));
-  const pastTrips = filteredBookings.filter(b => !isUpcoming(b.check_in) || b.status === 'cancelled' || b.status === 'rejected');
-
   const renderTripCard = (booking: Booking) => {
     const imageUrl = getImageUrl(booking.image_url);
     const statusCfg = getStatusConfig(booking.status);
@@ -517,13 +513,12 @@ const MyTrips: React.FC = () => {
           >
             {f.label}
             {f.key !== 'all' && (
-              <span style={{
-                marginLeft: '6px', fontSize: '11px',
-                opacity: 0.7,
-              }}>
-                {f.key === 'upcoming' ? bookings.filter(b => isUpcoming(b.check_in) && (b.status === 'confirmed' || b.status === 'pending')).length :
-                  f.key === 'past' ? bookings.filter(b => !isUpcoming(b.check_in) || b.status === 'cancelled' || b.status === 'rejected').length :
-                    bookings.filter(b => b.status === f.key).length}
+              <span style={{ marginLeft: '6px', fontSize: '11px', opacity: 0.7 }}>
+                {f.key === 'confirmed'
+                  ? bookings.filter(b => b.status === 'confirmed' && isUpcoming(b.check_in)).length
+                  : f.key === 'past'
+                    ? bookings.filter(b => !isUpcoming(b.check_in) || b.status === 'cancelled' || b.status === 'rejected').length
+                    : bookings.filter(b => b.status === f.key).length}
               </span>
             )}
           </button>
@@ -552,46 +547,8 @@ const MyTrips: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div>
-          {/* Show sections only when filter is 'all' */}
-          {activeFilter === 'all' && upcomingTrips.length > 0 && (
-            <>
-              <h2 style={{
-                fontSize: '20px', fontWeight: '600', color: '#222',
-                margin: '0 0 16px', background: 'none', padding: 0,
-                border: 'none', boxShadow: 'none', backdropFilter: 'none',
-                WebkitBackdropFilter: 'none', textShadow: 'none',
-              }}>
-                Upcoming reservations
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '40px' }}>
-                {upcomingTrips.map(renderTripCard)}
-              </div>
-            </>
-          )}
-
-          {activeFilter === 'all' && pastTrips.length > 0 && (
-            <>
-              <h2 style={{
-                fontSize: '20px', fontWeight: '600', color: '#222',
-                margin: '0 0 16px', background: 'none', padding: 0,
-                border: 'none', boxShadow: 'none', backdropFilter: 'none',
-                WebkitBackdropFilter: 'none', textShadow: 'none',
-              }}>
-                Where you've been
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {pastTrips.map(renderTripCard)}
-              </div>
-            </>
-          )}
-
-          {/* For specific filters, just show the list */}
-          {activeFilter !== 'all' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {filteredBookings.map(renderTripCard)}
-            </div>
-          )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {filteredBookings.map(renderTripCard)}
         </div>
       )}
 

@@ -15,6 +15,8 @@ const EditMember: React.FC = () => {
     email: '',
     phone: '',
     password: '',
+    plot_number: '',
+    property_id: '',
   });
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,9 @@ const EditMember: React.FC = () => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        password: '', // Don't show existing password
+        password: '',
+        plot_number: user.plot_number || '',
+        property_id: user.property_id ? String(user.property_id) : '',
       });
     } catch (error) {
       console.error('Error fetching member details:', error);
@@ -62,6 +66,8 @@ const EditMember: React.FC = () => {
       if (formData.email) updateData.email = formData.email;
       if (formData.phone) updateData.phone = formData.phone;
       if (formData.password) updateData.password = formData.password;
+      updateData.plot_number = formData.plot_number || null;
+      if (formData.property_id) updateData.property_id = parseInt(formData.property_id);
 
       await api.put(`/api/admin/member/${userId}`, updateData);
       setSuccess(true);
@@ -109,6 +115,31 @@ const EditMember: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             required
             className="input"
+          />
+        </label>
+        <label>
+          Sanctuary:
+          <select
+            value={formData.property_id}
+            onChange={(e) => setFormData({ ...formData, property_id: e.target.value })}
+            className="input"
+          >
+            <option value="">— No change —</option>
+            {properties.map((prop) => (
+              <option key={prop.id} value={prop.id}>
+                {prop.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Plot Number:
+          <input
+            type="text"
+            value={formData.plot_number}
+            onChange={(e) => setFormData({ ...formData, plot_number: e.target.value })}
+            className="input"
+            placeholder="e.g. P-42 (optional)"
           />
         </label>
         <label>

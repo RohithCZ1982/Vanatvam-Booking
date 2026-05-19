@@ -34,6 +34,7 @@ const MemberLookup: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showingAll, setShowingAll] = useState(false);
 
   useEffect(() => {
     fetchProperties();
@@ -57,6 +58,7 @@ const MemberLookup: React.FC = () => {
   const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
+    setShowingAll(false);
     try {
       const response = await api.get(`/api/admin/search-members?query=${query}`);
       setUsers(response.data);
@@ -65,6 +67,25 @@ const MemberLookup: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleShowAll = async () => {
+    setLoading(true);
+    setShowingAll(true);
+    setQuery('');
+    try {
+      const response = await api.get('/api/admin/all-members');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching all members:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshList = () => {
+    if (showingAll) handleShowAll();
+    else if (query.trim()) handleSearch();
   };
 
   const handleViewDetails = async (userId: number) => {
@@ -85,10 +106,7 @@ const MemberLookup: React.FC = () => {
     try {
       await api.post(`/api/admin/deactivate-member/${userId}`);
       alert(`${userName} has been deactivated successfully.`);
-      // Refresh the search results
-      if (query.trim()) {
-        handleSearch();
-      }
+      refreshList();
       // Refresh selected user if it's the deactivated one
       if (selectedUser && selectedUser.user.id === userId) {
         handleViewDetails(userId);
@@ -109,10 +127,7 @@ const MemberLookup: React.FC = () => {
     try {
       await api.post(`/api/admin/reactivate-member/${userId}`);
       alert(`${userName} has been reactivated successfully.`);
-      // Refresh the search results
-      if (query.trim()) {
-        handleSearch();
-      }
+      refreshList();
       // Refresh selected user if it's the reactivated one
       if (selectedUser && selectedUser.user.id === userId) {
         handleViewDetails(userId);
@@ -145,10 +160,7 @@ const MemberLookup: React.FC = () => {
     try {
       await api.delete(`/api/admin/member/${userId}`);
       alert(`${userName} and all related records have been deleted successfully.`);
-      // Refresh the search results
-      if (query.trim()) {
-        handleSearch();
-      }
+      refreshList();
       // Clear selected user if it's the deleted one
       if (selectedUser && selectedUser.user.id === userId) {
         setSelectedUser(null);
@@ -172,16 +184,30 @@ const MemberLookup: React.FC = () => {
           className="input"
           style={{ width: '300px', display: 'inline-block', marginRight: '10px' }}
         />
-        <button 
-          onClick={handleSearch} 
-          className="btn btn-primary" 
+        <button
+          onClick={handleSearch}
+          className="btn btn-primary"
           disabled={loading}
           title="Search Members"
-          style={{ padding: '5px 10px', minWidth: 'auto' }}
+          style={{ padding: '5px 10px', minWidth: 'auto', marginRight: '6px' }}
         >
           🔍
         </button>
+        <button
+          onClick={handleShowAll}
+          className="btn btn-secondary"
+          disabled={loading}
+          title="Show All Members"
+          style={{ padding: '5px 12px', minWidth: 'auto', fontWeight: showingAll ? '700' : '400' }}
+        >
+          {loading && showingAll ? '⏳' : 'Show All'}
+        </button>
       </div>
+      {showingAll && users.length > 0 && (
+        <div style={{ marginBottom: '10px', fontSize: '13px', color: '#6c757d' }}>
+          Showing all {users.length} member{users.length !== 1 ? 's' : ''}
+        </div>
+      )}
 
       {users.length > 0 && (
         <table className="table">
