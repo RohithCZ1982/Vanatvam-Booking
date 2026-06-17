@@ -224,18 +224,18 @@ def create_booking(
     available_weekday = current_user.weekday_balance - pending_weekday
     available_weekend = current_user.weekend_balance - pending_weekend
     
-    if cost_result["weekday_credits"] > available_weekday:
+    if cost_result["weekday_credits"] > 0 and cost_result["weekday_credits"] > available_weekday:
         raise HTTPException(
             status_code=400,
             detail=f"Insufficient weekday credits. Required: {cost_result['weekday_credits']}, Available: {available_weekday}"
         )
-    
-    if cost_result["weekend_credits"] > available_weekend:
+
+    if cost_result["weekend_credits"] > 0 and cost_result["weekend_credits"] > available_weekend:
         raise HTTPException(
             status_code=400,
             detail=f"Insufficient weekend credits. Required: {cost_result['weekend_credits']}, Available: {available_weekend}"
         )
-    
+
     # Deduct credits (escrow)
     current_user.weekday_balance -= cost_result["weekday_credits"]
     current_user.weekend_balance -= cost_result["weekend_credits"]
@@ -526,18 +526,18 @@ def update_booking(
         available_weekday = current_user.weekday_balance - pending_weekday
         available_weekend = current_user.weekend_balance - pending_weekend
         
-        if cost_result["weekday_credits"] > available_weekday:
+        if cost_result["weekday_credits"] > 0 and cost_result["weekday_credits"] > available_weekday:
             raise HTTPException(
                 status_code=400,
                 detail=f"Insufficient weekday credits. Required: {cost_result['weekday_credits']}, Available: {available_weekday}"
             )
-        
-        if cost_result["weekend_credits"] > available_weekend:
+
+        if cost_result["weekend_credits"] > 0 and cost_result["weekend_credits"] > available_weekend:
             raise HTTPException(
                 status_code=400,
                 detail=f"Insufficient weekend credits. Required: {cost_result['weekend_credits']}, Available: {available_weekend}"
             )
-        
+
         # Update booking
         booking.cottage_id = new_cottage_id
         booking.check_in = new_check_in
