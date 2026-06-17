@@ -138,7 +138,9 @@ class MaintenanceBlockCreate(BaseModel):
 class MaintenanceBlockResponse(MaintenanceBlockCreate):
     id: int
     created_at: datetime
-    
+    cottage_name: Optional[str] = None
+    property_name: Optional[str] = None
+
     class Config:
         from_attributes = True
 

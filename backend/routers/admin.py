@@ -608,7 +608,21 @@ def get_maintenance_blocks(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin_user)
 ):
-    return db.query(MaintenanceBlock).all()
+    blocks = db.query(MaintenanceBlock).all()
+    results = []
+    for block in blocks:
+        block_dict = {
+            "id": block.id,
+            "cottage_id": block.cottage_id,
+            "start_date": block.start_date,
+            "end_date": block.end_date,
+            "reason": block.reason,
+            "created_at": block.created_at,
+            "cottage_name": block.cottage.cottage_id if block.cottage else None,
+            "property_name": block.cottage.property.name if block.cottage and block.cottage.property else None,
+        }
+        results.append(block_dict)
+    return results
 
 @router.get("/maintenance-blocks/{block_id}/bookings")
 def get_maintenance_block_bookings(

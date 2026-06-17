@@ -33,6 +33,8 @@ interface MaintenanceBlock {
   start_date: string;
   end_date: string;
   reason?: string;
+  cottage_name?: string;
+  property_name?: string;
 }
 
 const BookingsCalendar: React.FC = () => {
@@ -149,6 +151,14 @@ const BookingsCalendar: React.FC = () => {
       return date >= start && date <= end;
     });
     return season ? season.name : null;
+  };
+
+  const getMaintenanceBlocksForDate = (date: Date): MaintenanceBlock[] => {
+    return maintenanceBlocks.filter(block => {
+      const start = new Date(block.start_date + 'T00:00:00');
+      const end = new Date(block.end_date + 'T23:59:59');
+      return date >= start && date <= end;
+    });
   };
 
   const handleRevokeBooking = async (bookingId: number, cottageName: string, userName: string) => {
@@ -271,7 +281,10 @@ const BookingsCalendar: React.FC = () => {
 
                 <div style={{ marginBottom: '15px', fontSize: '12px', color: '#6c757d' }}>
                   <span style={{ marginRight: '15px' }}>🟡 = Holiday/Peak Season</span>
-                  <span style={{ marginRight: '15px', color: '#495057' }}><span style={{ filter: 'brightness(0.4)' }}>🔧</span> = Maintenance Day</span>
+                  <span style={{ marginRight: '15px' }}>
+                    <span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#ff9800', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span>
+                    = Maintenance
+                  </span>
                 </div>
 
                 <div className="calendar-layout">
@@ -296,12 +309,20 @@ const BookingsCalendar: React.FC = () => {
                           const maintenanceDay = date ? isMaintenanceDay(date) : false;
                           const holidayName = date ? getHolidayName(date) : null;
                           const peakSeasonName = date ? getPeakSeasonName(date) : null;
+                          const dateMaintenanceBlocks = date ? getMaintenanceBlocksForDate(date) : [];
 
                           // Build tooltip
                           let tooltip = '';
                           if (holiday) tooltip += `Holiday: ${holidayName || 'Holiday'}\n`;
                           if (peakDay) tooltip += `Peak Season: ${peakSeasonName || 'Peak Season'}\n`;
-                          if (maintenanceDay) tooltip += 'Maintenance Day\n';
+                          if (dateMaintenanceBlocks.length > 0) {
+                            dateMaintenanceBlocks.forEach(block => {
+                              const label = block.cottage_name
+                                ? `${block.cottage_name}${block.property_name ? ` (${block.property_name})` : ''}`
+                                : 'Unknown cottage';
+                              tooltip += `🔧 Maintenance: ${label}${block.reason ? ` - ${block.reason}` : ''}\n`;
+                            });
+                          }
                           if (dateBookings.length > 0) {
                             tooltip += `Bookings: ${dateBookings.length}`;
                           }
@@ -329,6 +350,34 @@ const BookingsCalendar: React.FC = () => {
                                       <span style={{ fontSize: '10px' }}>🔧</span>
                                     )}
                                   </div>
+                                  {dateMaintenanceBlocks.length > 0 && (
+                                    <div className="calendar-bookings">
+                                      {dateMaintenanceBlocks.slice(0, 2).map(block => (
+                                        <div
+                                          key={`maint-${block.id}`}
+                                          style={{
+                                            fontSize: '10px',
+                                            padding: '1px 4px',
+                                            borderRadius: '3px',
+                                            backgroundColor: '#ff9800',
+                                            color: '#fff',
+                                            marginBottom: '2px',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                          }}
+                                          title={`🔧 ${block.cottage_name || 'Cottage'}${block.property_name ? ` (${block.property_name})` : ''}${block.reason ? ` - ${block.reason}` : ''}`}
+                                        >
+                                          🔧 {block.cottage_name}{block.property_name ? ` (${block.property_name})` : ''}
+                                        </div>
+                                      ))}
+                                      {dateMaintenanceBlocks.length > 2 && (
+                                        <div className="booking-badge more">
+                                          +{dateMaintenanceBlocks.length - 2} more
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                   {dateBookings.length > 0 && (
                                     <div className="calendar-bookings">
                                       {dateBookings.slice(0, 3).map(booking => (
@@ -360,13 +409,42 @@ const BookingsCalendar: React.FC = () => {
                     <div className="calendar-sidebar">
                       <div className="selected-date-bookings">
                         <h3 style={{ marginBottom: '20px', fontSize: '18px' }}>
-                          Bookings for {selectedDate.toLocaleDateString('en-US', {
+                          {selectedDate.toLocaleDateString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
                           })}
                         </h3>
+                        {getMaintenanceBlocksForDate(selectedDate).length > 0 && (
+                          <div style={{ marginBottom: '20px' }}>
+                            <h4 style={{ fontSize: '14px', color: '#ff9800', marginBottom: '10px' }}>🔧 Maintenance</h4>
+                            {getMaintenanceBlocksForDate(selectedDate).map(block => (
+                              <div
+                                key={block.id}
+                                style={{
+                                  padding: '10px 12px',
+                                  backgroundColor: '#fff3e0',
+                                  borderLeft: '4px solid #ff9800',
+                                  borderRadius: '4px',
+                                  marginBottom: '8px',
+                                }}
+                              >
+                                <div style={{ fontWeight: 600 }}>
+                                  {block.cottage_name}{block.property_name ? ` (${block.property_name})` : ''}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#717171', marginTop: '4px' }}>
+                                  {new Date(block.start_date + 'T00:00:00').toLocaleDateString()} - {new Date(block.end_date + 'T00:00:00').toLocaleDateString()}
+                                </div>
+                                {block.reason && (
+                                  <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>
+                                    Reason: {block.reason}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {selectedDateBookings.length > 0 ? (
                           <table className="table">
                             <thead>
