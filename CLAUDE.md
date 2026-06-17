@@ -69,7 +69,14 @@ Tables are auto-created by SQLAlchemy on backend startup via `Base.metadata.crea
 ### Styling
 All styling is inline React `style={{}}` objects — there is no CSS framework. Global CSS files exist per module (`Auth.css`, `AdminDashboard.css`, `OwnerDashboard.css`) for layout scaffolding only. The owner Dashboard uses an Airbnb-inspired design with responsive `@media` queries embedded in `<style>` tags.
 
+## Security — Never Commit Secrets
+- **NEVER commit files containing database credentials, API keys, JWT secrets, or passwords to git.**
+- Files like `backend/.env`, `cloudrun-service.yaml` are in `.gitignore` — keep them there.
+- For GCP Cloud Run, set env vars via `gcloud run services update --update-env-vars` or GCP Secret Manager — not in checked-in YAML files.
+- If a secret is accidentally committed, rotate it immediately (change the password/key at the source).
+
 ## Deployment
-- **Backend**: Dockerized, deployed to GCP Cloud Run (see `cloudbuild.yaml`, `cloudrun-service.yaml`) or AWS EC2
+- **Backend**: Dockerized, deployed to GCP Cloud Run (see `cloudbuild.yaml`) or AWS EC2
 - **Frontend**: Firebase Hosting (`firebase.json`) or AWS Amplify (`amplify.yml`)
 - Allowed CORS origins are hardcoded in `main.py` — update when adding new deployment targets
+- **Environment variables on Cloud Run** are managed via `gcloud run services update --update-env-vars` — never hardcode secrets in deployment files.
