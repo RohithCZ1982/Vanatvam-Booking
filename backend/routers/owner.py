@@ -604,3 +604,76 @@ def delete_booking(
     db.commit()
     
     return {"message": "Booking deleted successfully"}
+
+
+@router.get("/sanctuary-calendar")
+def get_sanctuary_calendar(
+    year: int,
+    month: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Return all bookings for the owner's sanctuary in the given month."""
+    if not current_user.property_id:
+        return {"bookings": [], "property_name": None}
+
+    property_obj = db.query(Property).filter(Property.id == current_user.property_id).first()
+    cottages = db.query(Cottage).filter(Cottage.property_id == current_user.property_id).all()
+    cottage_ids = [c.id for c in cottages]
+    cottage_map = {c.id: c.cottage_id for c in cottages}
+
+    import calendar as cal_module
+    _, days_in_month = cal_module.monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, days_in_month)
+
+    bookings = db.query(Booking).filter(
+        Booking.cottage_id.in_(cottage_ids),
+        Booking.check_in < month_end,
+        Booking.check_out > month_start,
+        Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED])
+    ).all()
+
+    # Get holiday/peak info for the month
+    calendar_entries = db.query(SystemCalendar).filter(
+        SystemCalendar.date >= month_start,
+        SystemCalendar.date <= month_end
+    ).all()
+    special_dates = {str(e.date): {"is_holiday": e.is_holiday, "is_peak_season": e.is_peak_season, "holiday_name": e.holiday_name} for e in calendar_entries}
+
+    # Get maintenance blocks
+    maintenance = db.query(MaintenanceBlock).filter(
+        MaintenanceBlock.cottage_id.in_(cottage_ids),
+        MaintenanceBlock.start_date <= month_end,
+        MaintenanceBlock.end_date >= month_start
+    ).all()
+
+    result = []
+    for b in bookings:
+        owner = db.query(User).filter(User.id == b.user_id).first()
+        result.append({
+            "id": b.id,
+            "cottage_id": b.cottage_id,
+            "cottage_name": cottage_map.get(b.cottage_id, "Unknown"),
+            "check_in": str(b.check_in),
+            "check_out": str(b.check_out),
+            "status": b.status,
+            "owner_name": owner.name if owner else "Unknown",
+        })
+
+    maintenance_result = []
+    for m in maintenance:
+        maintenance_result.append({
+            "cottage_id": m.cottage_id,
+            "cottage_name": cottage_map.get(m.cottage_id, "Unknown"),
+            "start_date": str(m.start_date),
+            "end_date": str(m.end_date),
+            "reason": m.reason,
+        })
+
+    return {
+        "property_name": property_obj.name if property_obj else None,
+        "bookings": result,
+        "maintenance": maintenance_result,
+        "special_dates": special_dates,
+    }

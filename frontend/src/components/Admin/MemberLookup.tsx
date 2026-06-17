@@ -198,9 +198,9 @@ const MemberLookup: React.FC = () => {
           className="btn btn-secondary"
           disabled={loading}
           title="Show All Members"
-          style={{ padding: '5px 12px', minWidth: 'auto', fontWeight: showingAll ? '700' : '400' }}
+          style={{ padding: '5px 10px', minWidth: 'auto', border: showingAll ? '2px solid #007bff' : undefined }}
         >
-          {loading && showingAll ? '⏳' : 'Show All'}
+          {loading && showingAll ? '⏳' : '👥'}
         </button>
       </div>
       {showingAll && users.length > 0 && (

@@ -60,6 +60,15 @@ const EditMember: React.FC = () => {
     setSuccess(false);
     setLoading(true);
 
+    if (formData.phone) {
+      const phoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
+      if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
+        setError('Please enter a valid 10-digit Indian mobile number');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const updateData: any = {};
       if (formData.name) updateData.name = formData.name;
@@ -112,8 +121,13 @@ const EditMember: React.FC = () => {
           <input
             type="tel"
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9+\-\s]/g, '');
+              setFormData({ ...formData, phone: val });
+            }}
             required
+            maxLength={15}
+            placeholder="e.g. 9876543210"
             className="input"
           />
         </label>

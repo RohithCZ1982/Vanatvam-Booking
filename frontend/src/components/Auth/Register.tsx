@@ -16,9 +16,17 @@ const Register: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const isValidPhone = (phone: string) => /^(\+91|91)?[6-9]\d{9}$/.test(phone.replace(/[\s-]/g, ''));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isValidPhone(formData.phone)) {
+      setError('Please enter a valid 10-digit Indian mobile number');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -133,13 +141,15 @@ const Register: React.FC = () => {
             <input
               id="phone"
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="e.g. 9876543210"
               value={formData.phone}
               onChange={(e) => {
-                setFormData({ ...formData, phone: e.target.value });
-                setError(''); // Clear error when user types
+                const val = e.target.value.replace(/[^0-9+\-\s]/g, '');
+                setFormData({ ...formData, phone: val });
+                setError('');
               }}
               required
+              maxLength={15}
               className={`auth-input ${error ? 'input-error' : ''}`}
               disabled={loading}
             />

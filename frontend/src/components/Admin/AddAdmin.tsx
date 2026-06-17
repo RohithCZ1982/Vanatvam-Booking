@@ -80,6 +80,14 @@ const AddAdmin: React.FC = () => {
       return;
     }
 
+    // Phone validation
+    const phoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
+    if (!phoneRegex.test(formData.phone.replace(/[\s-]/g, ''))) {
+      setMessage({ type: 'error', text: 'Please enter a valid 10-digit Indian mobile number' });
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.post('/api/admin/create-admin', formData);
       setMessage({ 
@@ -273,8 +281,13 @@ const AddAdmin: React.FC = () => {
             id="phone"
             name="phone"
             value={formData.phone}
-            onChange={handleChange}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9+\-\s]/g, '');
+              setFormData({ ...formData, phone: val });
+              if (message) setMessage(null);
+            }}
             required
+            maxLength={15}
             style={{
               width: '100%',
               padding: '10px',
@@ -283,7 +296,7 @@ const AddAdmin: React.FC = () => {
               fontSize: '14px',
               boxSizing: 'border-box'
             }}
-            placeholder="Enter phone number"
+            placeholder="e.g. 9876543210"
           />
         </div>
 

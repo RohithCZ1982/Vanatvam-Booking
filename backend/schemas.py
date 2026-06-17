@@ -1,7 +1,10 @@
-from pydantic import BaseModel, EmailStr
+import re
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import date, datetime
 from models import UserRole, UserStatus, BookingStatus
+
+PHONE_RE = re.compile(r'^(\+91|91)?[6-9]\d{9}$')
 
 # Auth Schemas
 class UserRegister(BaseModel):
@@ -9,6 +12,14 @@ class UserRegister(BaseModel):
     phone: str
     name: str
     password: str
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        cleaned = v.strip().replace(' ', '').replace('-', '')
+        if not PHONE_RE.match(cleaned):
+            raise ValueError('Enter a valid 10-digit Indian mobile number')
+        return cleaned
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -38,6 +49,16 @@ class MemberEdit(BaseModel):
     plot_number: Optional[str] = None
     property_id: Optional[int] = None
 
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        cleaned = v.strip().replace(' ', '').replace('-', '')
+        if not PHONE_RE.match(cleaned):
+            raise ValueError('Enter a valid 10-digit Indian mobile number')
+        return cleaned
+
 class MemberRejection(BaseModel):
     user_id: int
     reason: Optional[str] = None
@@ -47,6 +68,14 @@ class UserBase(BaseModel):
     email: EmailStr
     phone: str
     name: str
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        cleaned = v.strip().replace(' ', '').replace('-', '')
+        if not PHONE_RE.match(cleaned):
+            raise ValueError('Enter a valid 10-digit Indian mobile number')
+        return cleaned
 
 class UserCreate(UserBase):
     password: str
@@ -176,6 +205,14 @@ class AdminCreate(BaseModel):
     email: EmailStr
     password: str
     phone: str
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        cleaned = v.strip().replace(' ', '').replace('-', '')
+        if not PHONE_RE.match(cleaned):
+            raise ValueError('Enter a valid 10-digit Indian mobile number')
+        return cleaned
 
 # Quota Transaction Schema
 class QuotaTransactionResponse(BaseModel):

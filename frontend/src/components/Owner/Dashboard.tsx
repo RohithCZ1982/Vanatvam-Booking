@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -71,6 +72,13 @@ const Dashboard: React.FC = () => {
   const [hoveredCottage, setHoveredCottage] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<{ [key: number]: boolean }>({});
 
+  // Sanctuary calendar modal
+  const [showSanctuaryCalendar, setShowSanctuaryCalendar] = useState(false);
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
+  const [sanctuaryData, setSanctuaryData] = useState<any>(null);
+  const [loadingCal, setLoadingCal] = useState(false);
+
   // Default dates: today + 2 days
   const getDefaultDates = () => {
     const today = new Date();
@@ -100,6 +108,48 @@ const Dashboard: React.FC = () => {
     setCheckOut(defaults.checkOut);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (showSanctuaryCalendar) fetchSanctuaryCalendar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSanctuaryCalendar, calYear, calMonth]);
+
+  const fetchSanctuaryCalendar = async () => {
+    setLoadingCal(true);
+    try {
+      const res = await api.get(`/api/owner/sanctuary-calendar?year=${calYear}&month=${calMonth}`);
+      setSanctuaryData(res.data);
+    } catch (e) { console.error(e); }
+    finally { setLoadingCal(false); }
+  };
+
+  const calPrevMonth = () => {
+    if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1); }
+    else setCalMonth(m => m - 1);
+  };
+  const calNextMonth = () => {
+    if (calMonth === 12) { setCalMonth(1); setCalYear(y => y + 1); }
+    else setCalMonth(m => m + 1);
+  };
+  const calDayStr = (day: number) =>
+    `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const calBookingsForDay = (day: number): any[] => {
+    if (!sanctuaryData?.bookings) return [];
+    const ds = calDayStr(day);
+    return sanctuaryData.bookings.filter((b: any) => b.check_in <= ds && b.check_out > ds);
+  };
+  const calMaintForDay = (day: number): any[] => {
+    if (!sanctuaryData?.maintenance) return [];
+    const ds = calDayStr(day);
+    return sanctuaryData.maintenance.filter((m: any) => m.start_date <= ds && m.end_date >= ds);
+  };
+  const calSpecialForDay = (day: number): any =>
+    sanctuaryData?.special_dates?.[calDayStr(day)] || null;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const calFirstDay = new Date(calYear, calMonth - 1, 1).getDay();
+  const calDaysInMonth = new Date(calYear, calMonth, 0).getDate();
+  const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const CAL_DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
   const fetchDashboard = async () => {
     try {
@@ -461,21 +511,30 @@ const Dashboard: React.FC = () => {
             {/* Availability Calendar */}
             {availability && (
               <div style={{ marginBottom: '28px' }}>
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#222',
-                  margin: '0 0 20px 0',
-                  background: 'none',
-                  padding: 0,
-                  border: 'none',
-                  boxShadow: 'none',
-                  backdropFilter: 'none',
-                  WebkitBackdropFilter: 'none',
-                  textShadow: 'none',
-                }}>
-                  Availability
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <h3 style={{
+                    fontSize: '20px', fontWeight: '600', color: '#222', margin: 0,
+                    background: 'none', padding: 0, border: 'none', boxShadow: 'none',
+                    backdropFilter: 'none', WebkitBackdropFilter: 'none', textShadow: 'none',
+                  }}>
+                    Availability
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowSanctuaryCalendar(true)}
+                    style={{
+                      padding: '5px 14px', borderRadius: '20px',
+                      border: '1.5px solid #2d7a4f', background: '#fff',
+                      color: '#2d7a4f', fontSize: '12px', fontWeight: '600',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#2d7a4f'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#2d7a4f'; }}
+                  >
+                    📅 Sanctuary Calendar
+                  </button>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
                   {availability.availability.map((day) => {
                     const isHolidayOrPeak = day.is_holiday || day.is_peak_season;
@@ -1148,6 +1207,96 @@ const Dashboard: React.FC = () => {
           }
         }
       `}</style>
+
+      {/* ── Sanctuary Calendar Modal ─────────────────────── */}
+      {showSanctuaryCalendar && ReactDOM.createPortal(
+        <div
+          onClick={() => setShowSanctuaryCalendar(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '780px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden', marginTop: '8px' }}
+          >
+            {/* Header */}
+            <div style={{ background: '#1a2332', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ color: '#aaccbb', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sanctuary Calendar</div>
+                <div style={{ color: '#fff', fontSize: '17px', fontWeight: '700', marginTop: '2px' }}>{sanctuaryData?.property_name || ''}</div>
+              </div>
+              <button onClick={() => setShowSanctuaryCalendar(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            {/* Month nav */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '14px 20px', borderBottom: '1px solid #eee' }}>
+              <button onClick={calPrevMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '34px', height: '34px', cursor: 'pointer', fontSize: '16px' }}>&#8249;</button>
+              <span style={{ fontSize: '17px', fontWeight: '700', color: '#1a2332', minWidth: '160px', textAlign: 'center' }}>{CAL_MONTHS[calMonth - 1]} {calYear}</span>
+              <button onClick={calNextMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '34px', height: '34px', cursor: 'pointer', fontSize: '16px' }}>&#8250;</button>
+            </div>
+            {loadingCal ? (
+              <div style={{ padding: '60px', textAlign: 'center', color: '#888' }}>Loading...</div>
+            ) : (
+              <div style={{ padding: '12px 16px 20px' }}>
+                {/* Day headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', marginBottom: '4px' }}>
+                  {CAL_DAYS.map(d => (
+                    <div key={d} style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#888', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
+                  ))}
+                </div>
+                {/* Calendar days */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px' }}>
+                  {Array.from({ length: calFirstDay }).map((_, i) => <div key={`e${i}`} />)}
+                  {Array.from({ length: calDaysInMonth }, (_, i) => i + 1).map(day => {
+                    const dayBookings = calBookingsForDay(day);
+                    const dayMaint = calMaintForDay(day);
+                    const special = calSpecialForDay(day);
+                    const isToday = calDayStr(day) === todayStr;
+                    const hasConfirmed = dayBookings.some((b: any) => b.status === 'confirmed');
+                    const hasPending = dayBookings.some((b: any) => b.status === 'pending');
+                    let cellBg = '#fff';
+                    if (special?.is_holiday || special?.is_peak_season) cellBg = '#fffde7';
+                    if (dayMaint.length > 0) cellBg = '#fff3e0';
+                    if (hasConfirmed) cellBg = '#e8f5e9';
+                    if (hasPending && !hasConfirmed) cellBg = '#fff8e1';
+                    return (
+                      <div key={day} style={{ minHeight: '64px', border: isToday ? '2px solid #2d7a4f' : '1px solid #e8e8e8', borderRadius: '8px', padding: '4px 5px', background: cellBg }}>
+                        <div style={{ fontSize: '12px', fontWeight: isToday ? '800' : '600', color: isToday ? '#2d7a4f' : '#333', marginBottom: '3px' }}>{day}</div>
+                        {special && (special.is_holiday || special.is_peak_season) && (
+                          <div style={{ fontSize: '9px', color: '#f57f17', fontWeight: '600', lineHeight: 1.2, marginBottom: '2px' }}>
+                            {special.is_holiday ? `🟡 ${special.holiday_name || 'Holiday'}` : '🟡 Peak'}
+                          </div>
+                        )}
+                        {dayMaint.length > 0 && <div style={{ fontSize: '9px', color: '#e65100', fontWeight: '600', lineHeight: 1.2, marginBottom: '2px' }}>🔧 Maint.</div>}
+                        {dayBookings.slice(0, 2).map((b: any) => (
+                          <div key={b.id} title={`${b.owner_name} · ${b.check_in} → ${b.check_out}`}
+                            style={{ fontSize: '8.5px', fontWeight: '600', borderRadius: '3px', padding: '1px 3px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px', background: b.status === 'confirmed' ? '#4caf50' : '#ffc107', color: b.status === 'confirmed' ? '#fff' : '#333' }}>
+                            {b.cottage_name}
+                          </div>
+                        ))}
+                        {dayBookings.length > 2 && <div style={{ fontSize: '8px', color: '#888' }}>+{dayBookings.length - 2} more</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Legend */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px', padding: '10px 12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '11px' }}>
+                  {([
+                    { color: '#4caf50', label: 'Confirmed', border: 'none' },
+                    { color: '#ffc107', label: 'Pending', border: '1px solid #e0a800' },
+                    { color: '#ff9800', label: 'Maintenance', border: 'none' },
+                    { color: '#fff176', label: 'Holiday/Peak', border: '1px solid #fdd835' },
+                  ] as {color:string;label:string;border:string}[]).map(l => (
+                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: l.color, border: l.border, flexShrink: 0 }} />
+                      <span style={{ color: '#555', fontWeight: '500' }}>{l.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
