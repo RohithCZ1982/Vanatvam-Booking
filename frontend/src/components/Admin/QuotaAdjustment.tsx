@@ -143,26 +143,67 @@ const QuotaAdjustment: React.FC = () => {
             ))}
           </select>
         </label>
-        <label>
-          Weekday Change (positive to add, negative to subtract):
-          <input
-            type="number"
-            value={formData.weekday_change}
-            onChange={(e) => setFormData({ ...formData, weekday_change: parseInt(e.target.value) })}
-            required
-            className="input"
-          />
-        </label>
-        <label>
-          Weekend Change (positive to add, negative to subtract):
-          <input
-            type="number"
-            value={formData.weekend_change}
-            onChange={(e) => setFormData({ ...formData, weekend_change: parseInt(e.target.value) })}
-            required
-            className="input"
-          />
-        </label>
+        <label>Weekday Change:</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, weekday_change: formData.weekday_change - 1 })}
+            style={{
+              width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+              backgroundColor: '#dc3545', color: '#fff', fontSize: '20px', fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >−</button>
+          <div style={{
+            minWidth: '80px', height: '40px', borderRadius: '8px',
+            border: '2px solid #dee2e6', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: '18px', fontWeight: 700,
+            color: formData.weekday_change > 0 ? '#28a745' : formData.weekday_change < 0 ? '#dc3545' : '#495057',
+            backgroundColor: '#f8f9fa',
+          }}>
+            {formData.weekday_change > 0 ? '+' : ''}{formData.weekday_change}
+          </div>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, weekday_change: formData.weekday_change + 1 })}
+            style={{
+              width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+              backgroundColor: '#28a745', color: '#fff', fontSize: '20px', fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >+</button>
+        </div>
+
+        <label>Weekend Change:</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, weekend_change: formData.weekend_change - 1 })}
+            style={{
+              width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+              backgroundColor: '#dc3545', color: '#fff', fontSize: '20px', fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >−</button>
+          <div style={{
+            minWidth: '80px', height: '40px', borderRadius: '8px',
+            border: '2px solid #dee2e6', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: '18px', fontWeight: 700,
+            color: formData.weekend_change > 0 ? '#28a745' : formData.weekend_change < 0 ? '#dc3545' : '#495057',
+            backgroundColor: '#f8f9fa',
+          }}>
+            {formData.weekend_change > 0 ? '+' : ''}{formData.weekend_change}
+          </div>
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, weekend_change: formData.weekend_change + 1 })}
+            style={{
+              width: '40px', height: '40px', borderRadius: '50%', border: 'none',
+              backgroundColor: '#28a745', color: '#fff', fontSize: '20px', fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >+</button>
+        </div>
         <label>
           Description:
           <textarea
