@@ -4,9 +4,9 @@ from database import get_db
 from models import User, UserStatus, UserRole, EmailConfig
 from schemas import UserRegister, UserLogin, Token, UserResponse, ForgotPassword, ResetPassword
 from auth import verify_password, get_password_hash, create_access_token, get_current_user
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 import secrets
-from email_service import send_registration_confirmation_email, send_email_verified_notification
+from email_service import send_registration_confirmation_email, send_email_verified_notification, send_password_reset_email
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -140,16 +140,30 @@ def forgot_password(forgot_data: ForgotPassword, db: Session = Depends(get_db)):
     # Generate reset token (valid for 1 hour)
     reset_token = secrets.token_urlsafe(32)
     user.reset_token = reset_token
-    user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+    user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
     db.commit()
-    
-    # In production, send email with reset link
-    # For now, return the token (in production, this would be sent via email)
-    return {
-        "message": "Password reset token generated",
-        "reset_token": reset_token,  # Remove this in production - send via email
-        "reset_url": f"/reset-password?token={reset_token}"
-    }
+
+    # Send reset link via email
+    try:
+        email_config = db.query(EmailConfig).filter(EmailConfig.enabled == True).first()
+        if email_config:
+            send_password_reset_email(
+                user.email,
+                user.name,
+                reset_token,
+                frontend_url=email_config.frontend_url,
+                smtp_server=email_config.smtp_server,
+                smtp_port=email_config.smtp_port,
+                smtp_username=email_config.smtp_username,
+                smtp_password=email_config.smtp_password,
+                from_email=email_config.from_email
+            )
+        else:
+            send_password_reset_email(user.email, user.name, reset_token)
+    except Exception as e:
+        print(f"Error sending password reset email: {str(e)}")
+
+    return {"message": "If the email exists, a password reset link has been sent."}
 
 @router.post("/reset-password")
 def reset_password(reset_data: ResetPassword, db: Session = Depends(get_db)):
@@ -158,7 +172,10 @@ def reset_password(reset_data: ResetPassword, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
-    if user.reset_token_expires and user.reset_token_expires < datetime.utcnow():
+    expires = user.reset_token_expires
+    if expires and expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires and expires < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Reset token has expired")
     
     # Update password

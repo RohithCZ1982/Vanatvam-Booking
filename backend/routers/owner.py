@@ -653,6 +653,7 @@ def get_sanctuary_calendar(
         owner = db.query(User).filter(User.id == b.user_id).first()
         result.append({
             "id": b.id,
+            "user_id": b.user_id,
             "cottage_id": b.cottage_id,
             "cottage_name": cottage_map.get(b.cottage_id, "Unknown"),
             "check_in": str(b.check_in),

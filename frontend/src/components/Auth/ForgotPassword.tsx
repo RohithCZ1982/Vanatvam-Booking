@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import './Auth.css';
 
@@ -8,7 +7,6 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resetToken, setResetToken] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,12 +15,8 @@ const ForgotPassword: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/api/auth/forgot-password', { email });
+      await api.post('/api/auth/forgot-password', { email });
       setSuccess(true);
-      // In development, show the token. In production, this would be sent via email
-      if (response.data.reset_token) {
-        setResetToken(response.data.reset_token);
-      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to send reset email');
     } finally {
@@ -32,62 +26,102 @@ const ForgotPassword: React.FC = () => {
 
   if (success) {
     return (
-      <div className="auth-container">
+      <div
+        className="auth-container"
+        style={{ backgroundImage: 'url(/images/bagroundImage.png)' }}
+      >
         <div className="auth-card">
-          <h1>Vanatvam</h1>
-          <h2>Password Reset</h2>
-          <div className="success">
-            {resetToken ? (
-              <>
-                <p>Password reset token generated!</p>
-                <p style={{fontSize: '12px', wordBreak: 'break-all', backgroundColor: '#f8f9fa', padding: '10px', borderRadius: '4px'}}>
-                  <strong>Reset Token:</strong> {resetToken}
-                </p>
-                <p style={{fontSize: '12px', marginTop: '10px'}}>
-                  <Link to={`/reset-password?token=${resetToken}`}>Click here to reset your password</Link>
-                </p>
-                <p style={{fontSize: '11px', color: '#666', marginTop: '10px'}}>
-                  Note: In production, this token would be sent via email.
-                </p>
-              </>
-            ) : (
-              <p>If the email exists, a password reset link has been sent.</p>
-            )}
+          <div className="auth-header">
+            <h1 className="auth-logo">Vanatvam</h1>
+            <h2 className="auth-subtitle">Check Your Email</h2>
+            <p className="auth-description">
+              If an account exists for <strong>{email}</strong>, we've sent a password reset link. Please check your inbox.
+            </p>
           </div>
-          <Link to="/login" className="btn btn-primary" style={{display: 'inline-block', marginTop: '20px'}}>
-            Back to Login
-          </Link>
+
+          <div className="auth-form">
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', textAlign: 'center', margin: '0 0 20px', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+              Didn't receive the email? Check your spam folder or try again.
+            </p>
+            <button
+              className="auth-button"
+              onClick={() => { setSuccess(false); setEmail(''); }}
+              style={{ width: '100%', marginBottom: '10px' }}
+            >
+              Try Again
+            </button>
+            <div className="auth-footer">
+              <p>
+                Remember your password? <a href="/login">Sign In</a>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="auth-container">
+    <div
+      className="auth-container"
+      style={{ backgroundImage: 'url(/images/bagroundImage.png)' }}
+    >
       <div className="auth-card">
-        <h1>Vanatvam</h1>
-        <h2>Forgot Password</h2>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="input"
-          />
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
+        <div className="auth-header">
+          <h1 className="auth-logo">Vanatvam</h1>
+          <h2 className="auth-subtitle">Forgot Password</h2>
+          <p className="auth-description">Enter your email to receive a reset link</p>
+        </div>
+
+        {error && (
+          <div className="error-message" role="alert">
+            <span className="error-icon">⚠️</span>
+            <span className="error-text">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
+              required
+              className={`auth-input ${error ? 'input-error' : ''}`}
+              disabled={loading}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="auth-button"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Sending...
+              </>
+            ) : (
+              'Send Reset Link'
+            )}
           </button>
         </form>
-        <p>
-          <Link to="/login">Back to Login</Link>
-        </p>
+
+        <div className="auth-footer">
+          <p>
+            Remember your password? <a href="/login">Sign In</a>
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
 export default ForgotPassword;
-

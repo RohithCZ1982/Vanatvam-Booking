@@ -392,6 +392,7 @@ const MaintenanceBlocking: React.FC = () => {
         <table className="table">
           <thead>
             <tr>
+              <th>Sanctuary</th>
               <th>Cottage</th>
               <th>Start Date</th>
               <th>End Date</th>
@@ -404,6 +405,7 @@ const MaintenanceBlocking: React.FC = () => {
               const cottage = cottages.find((c) => c.id === block.cottage_id);
               return (
                 <tr key={block.id}>
+                  <td>{cottage?.property_name || '—'}</td>
                   <td>{cottage?.cottage_id || 'Unknown'}</td>
                   <td>{new Date(block.start_date).toLocaleDateString()}</td>
                   <td>{new Date(block.end_date).toLocaleDateString()}</td>

@@ -69,6 +69,9 @@ class UserBase(BaseModel):
     phone: str
     name: str
 
+class UserCreate(UserBase):
+    password: str
+
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v: str) -> str:
@@ -76,9 +79,6 @@ class UserBase(BaseModel):
         if not PHONE_RE.match(cleaned):
             raise ValueError('Enter a valid 10-digit Indian mobile number')
         return cleaned
-
-class UserCreate(UserBase):
-    password: str
 
 class UserResponse(UserBase):
     id: int

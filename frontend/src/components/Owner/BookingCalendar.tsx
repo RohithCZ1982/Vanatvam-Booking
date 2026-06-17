@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
@@ -420,13 +419,13 @@ const BookingCalendar: React.FC = () => {
                 <h4 style={{ margin: 0 }}>Availability</h4>
                 <button
                   type="button"
-                  onClick={() => setShowSanctuaryCalendar(true)}
+                  onClick={() => setShowSanctuaryCalendar(v => !v)}
                   style={{
                     padding: '5px 14px',
                     borderRadius: '20px',
-                    border: '1.5px solid #2d7a4f',
-                    background: '#fff',
-                    color: '#2d7a4f',
+                    border: `1.5px solid ${showSanctuaryCalendar ? '#c0392b' : '#2d7a4f'}`,
+                    background: showSanctuaryCalendar ? '#c0392b' : '#fff',
+                    color: showSanctuaryCalendar ? '#fff' : '#2d7a4f',
                     fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer',
@@ -435,77 +434,163 @@ const BookingCalendar: React.FC = () => {
                     gap: '5px',
                     transition: 'all 0.2s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#2d7a4f'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#2d7a4f'; }}
+                  onMouseEnter={e => { if (!showSanctuaryCalendar) { e.currentTarget.style.background = '#2d7a4f'; e.currentTarget.style.color = '#fff'; } }}
+                  onMouseLeave={e => { if (!showSanctuaryCalendar) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#2d7a4f'; } }}
                 >
-                  📅 Sanctuary Calendar
+                  {showSanctuaryCalendar ? '✕ Close Calendar' : '📅 Sanctuary Calendar'}
                 </button>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {availability.availability.map((day) => {
-                  const isHolidayOrPeak = day.is_holiday || day.is_peak_season;
-                  const dayDate = new Date(day.date).toISOString().split('T')[0];
-                  const isSelectedDate = dayDate === checkIn || dayDate === checkOut;
-                  const isInSelectedRange = checkIn && checkOut && dayDate >= checkIn && dayDate < checkOut;
-                  
-                  // Determine background color
-                  let backgroundColor = '#d4edda'; // default available
-                  if (day.is_booked) {
-                    backgroundColor = '#f8d7da';
-                  } else if (day.is_maintenance) {
-                    backgroundColor = '#fff3cd';
-                  }
-                  
-                  // Highlight holiday/peak season dates with yellow background
-                  if (isHolidayOrPeak) {
-                    backgroundColor = '#fff9c4'; // Light yellow
-                  }
-                  
-                  // Highlight selected dates with stronger border
-                  const borderColor = isSelectedDate ? '#ffc107' : isHolidayOrPeak ? '#ffd700' : '#ddd';
-                  const borderWidth = isSelectedDate ? '3px' : isHolidayOrPeak ? '2px' : '1px';
-                  
-                  return (
-                    <div
-                      key={day.date}
-                      style={{
-                        padding: '5px',
-                        width: '40px',
-                        textAlign: 'center',
-                        backgroundColor: backgroundColor,
-                        border: `${borderWidth} solid ${borderColor}`,
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: isSelectedDate ? 'bold' : 'normal',
-                        boxShadow: isSelectedDate ? '0 0 5px rgba(255, 193, 7, 0.5)' : 'none',
-                      }}
-                      title={
-                        day.is_holiday
-                          ? 'Holiday (Weekend pricing)'
-                          : day.is_peak_season
-                          ? 'Peak Season (Weekend pricing)'
-                          : day.is_maintenance
-                          ? 'Maintenance'
-                          : day.is_booked
-                          ? 'Booked'
-                          : 'Available'
-                      }
-                    >
-                      {new Date(day.date).getDate()}
-                      {isHolidayOrPeak && ' 🟡'}
+
+              {showSanctuaryCalendar ? (() => {
+                const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+                const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+                const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+                const getBookingsForDay = (day: number) => {
+                  if (!sanctuaryData) return [];
+                  const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                  return (sanctuaryData.bookings || []).filter((b: any) => b.check_in <= dateStr && b.check_out > dateStr);
+                };
+                const getMaintenanceForDay = (day: number) => {
+                  if (!sanctuaryData) return [];
+                  const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                  return (sanctuaryData.maintenance || []).filter((m: any) => m.start_date <= dateStr && m.end_date >= dateStr);
+                };
+                const getSpecialForDay = (day: number) => {
+                  if (!sanctuaryData) return null;
+                  const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                  return sanctuaryData.special_dates?.[dateStr] || null;
+                };
+                const todayStr = new Date().toISOString().split('T')[0];
+                const isTodayFn = (day: number) => `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}` === todayStr;
+                const prevMonth = () => { if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); };
+                const nextMonth = () => { if (calMonth === 12) { setCalMonth(1); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); };
+
+                return (
+                  <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: '12px' }}>
+                    <div style={{ background: '#1a2332', padding: '12px 16px' }}>
+                      <div style={{ color: '#aaccbb', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sanctuary Calendar</div>
+                      <div style={{ color: '#fff', fontSize: '15px', fontWeight: '700', marginTop: '2px' }}>{sanctuaryData?.property_name || ''}</div>
                     </div>
-                  );
-                })}
-              </div>
-              <p style={{ fontSize: '12px', marginTop: '10px' }}>
-                🟡 = Holiday/Peak Season (Weekend pricing) | Selected dates are highlighted with bold border
-              </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '10px 16px', borderBottom: '1px solid #eee' }}>
+                      <button onClick={prevMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '30px', height: '30px', cursor: 'pointer', fontSize: '14px' }}>&#8249;</button>
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#1a2332', minWidth: '140px', textAlign: 'center' }}>{MONTHS[calMonth - 1]} {calYear}</span>
+                      <button onClick={nextMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '30px', height: '30px', cursor: 'pointer', fontSize: '14px' }}>&#8250;</button>
+                    </div>
+                    {loadingCal ? (
+                      <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading...</div>
+                    ) : (
+                      <div style={{ padding: '10px 12px 16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px', marginBottom: '3px' }}>
+                          {DAY_NAMES.map(d => (
+                            <div key={d} style={{ textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#888', padding: '3px 0', textTransform: 'uppercase' }}>{d}</div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '3px' }}>
+                          {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+                          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                            const dayBookings = getBookingsForDay(day);
+                            const dayMaint = getMaintenanceForDay(day);
+                            const special = getSpecialForDay(day);
+                            const today = isTodayFn(day);
+                            const hasConfirmed = dayBookings.some((b: any) => b.status === 'confirmed');
+                            const hasPending = dayBookings.some((b: any) => b.status === 'pending');
+                            let cellBg = '#fff';
+                            if (special?.is_holiday || special?.is_peak_season) cellBg = '#fffde7';
+                            if (dayMaint.length > 0) cellBg = '#fff3e0';
+                            if (hasConfirmed) cellBg = '#e8f5e9';
+                            if (hasPending && !hasConfirmed) cellBg = '#fff8e1';
+                            return (
+                              <div key={day} style={{ minHeight: '56px', border: today ? '2px solid #2d7a4f' : '1px solid #e8e8e8', borderRadius: '6px', padding: '3px 4px', background: cellBg }}>
+                                <div style={{ fontSize: '11px', fontWeight: today ? '800' : '600', color: today ? '#2d7a4f' : '#333', marginBottom: '2px' }}>{day}</div>
+                                {special && (special.is_holiday || special.is_peak_season) && (
+                                  <div style={{ fontSize: '8px', color: '#f57f17', fontWeight: '600', lineHeight: 1.2, marginBottom: '1px' }}>
+                                    {special.is_holiday ? `🟡 ${special.holiday_name || 'Holiday'}` : '🟡 Peak'}
+                                  </div>
+                                )}
+                                {dayMaint.length > 0 && <div style={{ fontSize: '8px', color: '#e65100', fontWeight: '600', lineHeight: 1.2, marginBottom: '1px' }}>🔧 Maint.</div>}
+                                {dayBookings.slice(0, 2).map((b: any) => (
+                                  <div key={b.id} title={`${b.owner_name} · ${b.check_in} → ${b.check_out}`}
+                                    style={{ fontSize: '8px', fontWeight: '600', borderRadius: '3px', padding: '1px 2px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '1px', background: b.status === 'confirmed' ? '#4caf50' : '#ffc107', color: b.status === 'confirmed' ? '#fff' : '#333' }}>
+                                    {b.cottage_name}
+                                  </div>
+                                ))}
+                                {dayBookings.length > 2 && <div style={{ fontSize: '7px', color: '#888' }}>+{dayBookings.length - 2}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '12px', padding: '8px 10px', background: '#f8f9fa', borderRadius: '6px', fontSize: '10px' }}>
+                          {[
+                            { color: '#4caf50', label: 'Confirmed', border: 'none' },
+                            { color: '#ffc107', label: 'Pending', border: '1px solid #e0a800' },
+                            { color: '#ff9800', label: 'Maintenance', border: 'none' },
+                            { color: '#fff176', label: 'Holiday/Peak', border: '1px solid #fdd835' },
+                          ].map(l => (
+                            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: l.color, border: l.border, flexShrink: 0 }} />
+                              <span style={{ color: '#555', fontWeight: '500' }}>{l.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {availability.availability.map((day) => {
+                      const isHolidayOrPeak = day.is_holiday || day.is_peak_season;
+                      const dayDate = new Date(day.date).toISOString().split('T')[0];
+                      const isSelectedDate = dayDate === checkIn || dayDate === checkOut;
+
+                      let backgroundColor = '#d4edda';
+                      if (day.is_booked) backgroundColor = '#f8d7da';
+                      else if (day.is_maintenance) backgroundColor = '#fff3cd';
+                      if (isHolidayOrPeak) backgroundColor = '#fff9c4';
+
+                      const borderColor = isSelectedDate ? '#ffc107' : isHolidayOrPeak ? '#ffd700' : '#ddd';
+                      const borderWidth = isSelectedDate ? '3px' : isHolidayOrPeak ? '2px' : '1px';
+
+                      return (
+                        <div
+                          key={day.date}
+                          style={{
+                            padding: '5px',
+                            width: '40px',
+                            textAlign: 'center',
+                            backgroundColor,
+                            border: `${borderWidth} solid ${borderColor}`,
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: isSelectedDate ? 'bold' : 'normal',
+                            boxShadow: isSelectedDate ? '0 0 5px rgba(255, 193, 7, 0.5)' : 'none',
+                          }}
+                          title={
+                            day.is_holiday ? 'Holiday (Weekend pricing)'
+                              : day.is_peak_season ? 'Peak Season (Weekend pricing)'
+                              : day.is_maintenance ? 'Maintenance'
+                              : day.is_booked ? 'Booked' : 'Available'
+                          }
+                        >
+                          {new Date(day.date).getDate()}
+                          {isHolidayOrPeak && ' 🟡'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: '12px', marginTop: '10px' }}>
+                    🟡 = Holiday/Peak Season (Weekend pricing) | Selected dates are highlighted with bold border
+                  </p>
+                </>
+              )}
             </div>
           )}
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             disabled={loading || !costBreakdown || isQuotaExceeded()}
             style={{ marginTop: '20px' }}
             title={isQuotaExceeded() ? quotaError : loading ? 'Submitting...' : 'Submit Booking Request'}
@@ -513,9 +598,9 @@ const BookingCalendar: React.FC = () => {
             {loading ? 'Submitting...' : 'Submit Booking Request'}
           </button>
           {isQuotaExceeded() && (
-            <p style={{ 
-              fontSize: '12px', 
-              color: '#dc3545', 
+            <p style={{
+              fontSize: '12px',
+              color: '#dc3545',
               marginTop: '8px',
               fontStyle: 'italic'
             }}>
@@ -524,131 +609,6 @@ const BookingCalendar: React.FC = () => {
           )}
         </form>
       </div>
-
-      {/* ── Sanctuary Calendar Modal ─────────────────────────────── */}
-      {showSanctuaryCalendar && ReactDOM.createPortal((() => {
-        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-        const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-        const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
-        const daysInMonth = new Date(calYear, calMonth, 0).getDate();
-
-        const getBookingsForDay = (day: number) => {
-          if (!sanctuaryData) return [];
-          const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-          return (sanctuaryData.bookings || []).filter((b: any) => b.check_in <= dateStr && b.check_out > dateStr);
-        };
-        const getMaintenanceForDay = (day: number) => {
-          if (!sanctuaryData) return [];
-          const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-          return (sanctuaryData.maintenance || []).filter((m: any) => m.start_date <= dateStr && m.end_date >= dateStr);
-        };
-        const getSpecialForDay = (day: number) => {
-          if (!sanctuaryData) return null;
-          const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-          return sanctuaryData.special_dates?.[dateStr] || null;
-        };
-        const todayStr = new Date().toISOString().split('T')[0];
-        const isToday = (day: number) => `${calYear}-${String(calMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}` === todayStr;
-
-        const prevMonth = () => { if (calMonth === 1) { setCalMonth(12); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); };
-        const nextMonth = () => { if (calMonth === 12) { setCalMonth(1); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); };
-
-        return (
-          <div
-            onClick={() => setShowSanctuaryCalendar(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
-          >
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '780px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden', marginTop: '8px' }}
-            >
-              {/* Header */}
-              <div style={{ background: '#1a2332', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ color: '#aaccbb', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sanctuary Calendar</div>
-                  <div style={{ color: '#fff', fontSize: '17px', fontWeight: '700', marginTop: '2px' }}>{sanctuaryData?.property_name || ''}</div>
-                </div>
-                <button onClick={() => setShowSanctuaryCalendar(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
-              </div>
-
-              {/* Month nav */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '14px 20px', borderBottom: '1px solid #eee' }}>
-                <button onClick={prevMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '34px', height: '34px', cursor: 'pointer', fontSize: '16px' }}>‹</button>
-                <span style={{ fontSize: '17px', fontWeight: '700', color: '#1a2332', minWidth: '160px', textAlign: 'center' }}>{MONTHS[calMonth - 1]} {calYear}</span>
-                <button onClick={nextMonth} style={{ background: '#f4f4f4', border: 'none', borderRadius: '8px', width: '34px', height: '34px', cursor: 'pointer', fontSize: '16px' }}>›</button>
-              </div>
-
-              {loadingCal ? (
-                <div style={{ padding: '60px', textAlign: 'center', color: '#888' }}>Loading...</div>
-              ) : (
-                <div style={{ padding: '12px 16px 20px' }}>
-                  {/* Day headers */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px', marginBottom: '4px' }}>
-                    {DAY_NAMES.map(d => (
-                      <div key={d} style={{ textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#888', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
-                    ))}
-                  </div>
-
-                  {/* Calendar grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '4px' }}>
-                    {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                      const dayBookings = getBookingsForDay(day);
-                      const dayMaint = getMaintenanceForDay(day);
-                      const special = getSpecialForDay(day);
-                      const today = isToday(day);
-                      const hasConfirmed = dayBookings.some((b: any) => b.status === 'confirmed');
-                      const hasPending = dayBookings.some((b: any) => b.status === 'pending');
-                      const hasMaint = dayMaint.length > 0;
-
-                      let cellBg = '#fff';
-                      if (special?.is_holiday || special?.is_peak_season) cellBg = '#fffde7';
-                      if (hasMaint) cellBg = '#fff3e0';
-                      if (hasConfirmed) cellBg = '#e8f5e9';
-                      if (hasPending && !hasConfirmed) cellBg = '#fff8e1';
-
-                      return (
-                        <div key={day} style={{ minHeight: '64px', border: today ? '2px solid #2d7a4f' : '1px solid #e8e8e8', borderRadius: '8px', padding: '4px 5px', background: cellBg, position: 'relative' }}>
-                          <div style={{ fontSize: '12px', fontWeight: today ? '800' : '600', color: today ? '#2d7a4f' : '#333', marginBottom: '3px' }}>{day}</div>
-                          {special && (special.is_holiday || special.is_peak_season) && (
-                            <div style={{ fontSize: '9px', color: '#f57f17', fontWeight: '600', lineHeight: 1.2, marginBottom: '2px' }}>
-                              {special.is_holiday ? `🟡 ${special.holiday_name || 'Holiday'}` : '🟡 Peak'}
-                            </div>
-                          )}
-                          {hasMaint && <div style={{ fontSize: '9px', color: '#e65100', fontWeight: '600', lineHeight: 1.2, marginBottom: '2px' }}>🔧 Maint.</div>}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {dayBookings.slice(0, 2).map((b: any) => (
-                              <div key={b.id} title={`${b.owner_name} · ${b.check_in} → ${b.check_out}`} style={{ fontSize: '8.5px', fontWeight: '600', borderRadius: '3px', padding: '1px 3px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background: b.status === 'confirmed' ? '#4caf50' : '#ffc107', color: b.status === 'confirmed' ? '#fff' : '#333' }}>
-                                {b.cottage_name}
-                              </div>
-                            ))}
-                            {dayBookings.length > 2 && <div style={{ fontSize: '8px', color: '#888' }}>+{dayBookings.length - 2} more</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Legend */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px', padding: '10px 12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '11px' }}>
-                    {[
-                      { color: '#4caf50', label: 'Confirmed' },
-                      { color: '#ffc107', label: 'Pending', textColor: '#333' },
-                      { color: '#ff9800', label: 'Maintenance' },
-                      { color: '#fff176', label: 'Holiday/Peak', textColor: '#333', border: '1px solid #fdd835' },
-                    ].map(l => (
-                      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: l.color, border: l.border || 'none', flexShrink: 0 }} />
-                        <span style={{ color: '#555', fontWeight: '500' }}>{l.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })(), document.body)}
 
       {/* Bookings List */}
       <div className="card" style={{ marginTop: '30px' }}>
