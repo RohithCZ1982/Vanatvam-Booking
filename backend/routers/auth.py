@@ -250,9 +250,12 @@ def verify_email(token: str, db: Session = Depends(get_db)):
             print(f"Verification failed: Token expired. Expires: {expires}, Now: {now}")
             raise HTTPException(status_code=400, detail="Verification token has expired. Please register again.")
     
-    # Mark email as verified
+    # Mark email as verified. Keep verification_token in place (rather than
+    # nulling it) so a second hit on this link - e.g. an email security
+    # scanner (Outlook Safe Links, Gmail link proxies) that auto-visits
+    # links before the user clicks - still matches the user above and hits
+    # the "already verified" branch instead of "invalid or expired token".
     user.email_verified = True
-    user.verification_token = None
     user.verification_token_expires = None
     # User status remains "pending" until admin approval
     db.commit()

@@ -17,6 +17,8 @@ app.add_middleware(
         "https://vanatvam-booking.firebaseapp.com",      # Firebase Hosting (alternate)
         "https://vanatvam-booking-app.web.app",          # Firebase Hosting (new project)
         "https://vanatvam-booking-app.firebaseapp.com",  # Firebase Hosting (new project alt)
+        "https://vanatvam-booking-dce9d.web.app",        # Firebase Hosting (info@vanatvam.com customer)
+        "https://vanatvam-booking-dce9d.firebaseapp.com",# Firebase Hosting (info@vanatvam.com customer alt)
     ],
     allow_credentials=True,
     allow_methods=["*"],

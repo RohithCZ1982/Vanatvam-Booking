@@ -234,9 +234,9 @@
         </div>
 
         <div class="form-group">
-            <label for="dbPassword">Database Password</label>
-            <input type="text" id="dbPassword" placeholder="Strong!Password#123" oninput="generateScripts()">
-            <span class="input-hint">Admin password for the new Cloud SQL PostgreSQL instance.</span>
+            <label for="neonUrl">Neon Database Connection String</label>
+            <input type="text" id="neonUrl" placeholder="postgresql://user:password@ep-xxxx.neon.tech/vanatvam?sslmode=require&channel_binding=require" oninput="generateScripts()">
+            <span class="input-hint">Create a new project + database at console.neon.tech first, then paste its connection string here.</span>
         </div>
 
         <div class="form-group">
@@ -289,7 +289,6 @@
     window.onload = () => {
         generateRandomJWT();
         document.getElementById('projectId').value = 'my-new-vanatvam-' + Math.floor(Math.random() * 1000);
-        document.getElementById('dbPassword').value = 'VanatvamTempDB#' + Math.floor(Math.random() * 10000);
         generateScripts();
     };
 
@@ -303,7 +302,7 @@
     function generateScripts() {
         const projectId = document.getElementById('projectId').value.trim() || '[YOUR-PROJECT-ID]';
         const region = document.getElementById('region').value;
-        const dbPassword = document.getElementById('dbPassword').value.trim() || '[DB-PASSWORD]';
+        const neonUrl = document.getElementById('neonUrl').value.trim() || '[NEON-DATABASE-URL]';
         const jwtSecret = document.getElementById('jwtSecret').value.trim() || '[JWT-SECRET]';
         const projectPath = document.getElementById('projectPath').value.trim() || '.';
 
@@ -325,41 +324,23 @@ gcloud config set project ${projectId}
 echo "Enabling GCP Services..."
 gcloud services enable \\
   run.googleapis.com \\
-  sql-component.googleapis.com \\
-  sqladmin.googleapis.com \\
   artifactregistry.googleapis.com \\
   cloudbuild.googleapis.com \\
   secretmanager.googleapis.com \\
   firebase.googleapis.com \\
   firebasehosting.googleapis.com
 
-# 3. Create Cloud SQL PostgreSQL Database
-echo "Creating Cloud SQL Database instance (Takes 5-10 minutes)..."
-gcloud sql instances create vanatvam-db \\
-  --database-version=POSTGRES_15 \\
-  --tier=db-f1-micro \\
-  --region=${region} \\
-  --storage-auto-increase \\
-  --storage-size=10GB \\
-  --availability-type=zonal
-
-echo "Creating 'vanatvam' database..."
-gcloud sql databases create vanatvam --instance=vanatvam-db
-
-echo "Creating database user..."
-gcloud sql users create vanatvam_user \\
-  --instance=vanatvam-db \\
-  --password="${dbPassword}"
-
-# 4. Store Secrets in Secret Manager
+# 3. Store Secrets in Secret Manager
+# NOTE: Create the Neon project + empty 'vanatvam' database yourself first at
+# console.neon.tech, then paste its connection string into the wizard form.
 echo "Creating Secrets..."
-echo -n "postgresql+psycopg2://vanatvam_user:${dbPassword}@/vanatvam?host=/cloudsql/${projectId}:${region}:vanatvam-db" | \\
+echo -n "${neonUrl}" | \\
   gcloud secrets create DATABASE_URL --data-file=-
 
 echo -n "${jwtSecret}" | \\
   gcloud secrets create JWT_SECRET_KEY --data-file=-
 
-# 5. Set up Artifact Registry (Docker Repo)
+# 4. Set up Artifact Registry (Docker Repo)
 echo "Creating Docker Repository..."
 gcloud artifacts repositories create vanatvam-repo \\
   --repository-format=docker \\
@@ -368,24 +349,20 @@ gcloud artifacts repositories create vanatvam-repo \\
 
 gcloud auth configure-docker ${region}-docker.pkg.dev
 
-# 6. Build and Push Backend Image
+# 5. Build and Push Backend Image
 echo "Building Docker container..."
 cd ${projectPath}/backend
 docker build -t ${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest .
 docker push ${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest
 
-# 7. Grant Cloud Run Access to Secrets & SQL
+# 6. Grant Cloud Run Access to Secrets
 PROJECT_NUMBER=$(gcloud projects describe ${projectId} --format="value(projectNumber)")
 
 gcloud projects add-iam-policy-binding ${projectId} \\
   --member="serviceAccount:\${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \\
   --role="roles/secretmanager.secretAccessor"
 
-gcloud projects add-iam-policy-binding ${projectId} \\
-  --member="serviceAccount:\${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \\
-  --role="roles/cloudsql.client"
-
-# 8. Deploy to Cloud Run
+# 7. Deploy to Cloud Run
 echo "Deploying to Cloud Run..."
 gcloud run deploy vanatvam-backend \\
   --image=${region}-docker.pkg.dev/${projectId}/vanatvam-repo/backend:latest \\
@@ -393,7 +370,6 @@ gcloud run deploy vanatvam-backend \\
   --platform=managed \\
   --allow-unauthenticated \\
   --port=8000 \\
-  --add-cloudsql-instances=${projectId}:${region}:vanatvam-db \\
   --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=JWT_SECRET_KEY:latest"
 
 echo "✅ Backend Deployment Complete!"

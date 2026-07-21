@@ -32,13 +32,16 @@ Before opening the wizard, you must tell your local terminal to switch from your
    firebase login --reauth
    ```
 
-### Phase 2: Create the GCP Project
-You must create an empty "Project Box" in Google Cloud first.
+### Phase 2: Create the GCP Project and Neon Database
+You must create an empty "Project Box" in Google Cloud, and a separate Neon Postgres database, first.
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com) (make sure you are logged into the new account).
 2. Click **New Project** and create one (e.g., `client-vanatvam-prod`).
 3. Note down the **Project ID** it gives you.
-4. **CRITICAL:** You must link a Billing Account to this new project, otherwise the automated script will fail when it tries to use Secret Manager.
+4. **CRITICAL:** You must link a Billing Account to this new project, otherwise the automated script will fail when it tries to use Secret Manager / Cloud Run / Artifact Registry.
+5. Go to [console.neon.tech](https://console.neon.tech) and create a **new Neon project** for this customer (separate from your own production Neon project).
+6. Inside it, create a database named `vanatvam`.
+7. Copy the **connection string** Neon gives you (it looks like `postgresql://user:password@ep-xxxx.aws.neon.tech/vanatvam?sslmode=require&channel_binding=require`).
 
 ### Phase 3: The Setup Wizard
 Now we generate the exact automated script for the new infrastructure.
@@ -46,7 +49,7 @@ Now we generate the exact automated script for the new infrastructure.
 1. Open the `gcp-setup-wizard.html` file in your web browser.
 2. Fill in the details:
    * **GCP Project ID:** *Enter the exact Project ID from Phase 2.*
-   * **Database Password:** *Create a strong password for the new Cloud SQL Postgres database.*
+   * **Neon Database Connection String:** *Paste the connection string you copied from Neon in Phase 2.*
    * **JWT Secret Key:** *Click "Regenerate" or type a secure random string.*
 3. Stay on the **1. Backend Deployment** tab.
 4. Click **Copy Script**.
@@ -57,10 +60,9 @@ This is where the semi-automatic deployment happens.
 1. Go back to your terminal window.
 2. Ensure you are in the root directory (`/Users/rohithkumar/Documents/MySites/Vanatvam-Booking`).
 3. **Paste** the copied script into the terminal and press **Enter**.
-4. *Wait 10-15 minutes.* The automation will now:
+4. *Wait 5-10 minutes.* The automation will now:
    * Enable all required GCP APIs
-   * Create the PostgreSQL database and user
-   * Store passwords securely in Secret Manager
+   * Store the Neon connection string and JWT secret securely in Secret Manager
    * Create the Artifact Registry Docker repository
    * Build the Python Backend image
    * Push the image and deploy it to Cloud Run
